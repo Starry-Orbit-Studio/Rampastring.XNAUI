@@ -85,11 +85,12 @@
     <DefineConstants>TRACE;XNA</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\XNAFramework\Release\Rampastring.XNAUI.XML</DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
-  <Import Project="$(MSBuildProjectDirectory)\..\build\Framework.props"/>
+  <Import Project="$(MSBuildProjectDirectory)\..\build\Framework.props" />
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
