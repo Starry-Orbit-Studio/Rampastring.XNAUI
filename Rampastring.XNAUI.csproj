@@ -160,9 +160,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Resources\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\MonoGame.IMEHelper\MonoGame.IMEHelper.csproj">
       <Project>{2f2bdfdd-18e8-41cf-960d-0fe28662d1c6}</Project>
