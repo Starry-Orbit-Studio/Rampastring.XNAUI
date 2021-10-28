@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Linq;
 using Rampastring.XNAUI.PlatformSpecific;
 using System.Windows.Forms;
+using MonoGame.IMEHelper;
 
 namespace Rampastring.XNAUI
 {
@@ -122,7 +123,7 @@ namespace Rampastring.XNAUI
         private RenderTarget2D renderTarget;
         private RenderTarget2D doubledRenderTarget;
         private bool closingPrevented = false;
-
+        internal IMEHandler IMEHandler;
         /// <summary>
         /// Sets the rendering (back buffer) resolution of the game.
         /// Does not affect the size of the actual game window.
@@ -199,7 +200,7 @@ namespace Rampastring.XNAUI
 #endif
 
                 // Enable sharper scaling method
-                doubledRenderTarget = new RenderTarget2D(GraphicsDevice, 
+                doubledRenderTarget = new RenderTarget2D(GraphicsDevice,
                     RenderResolutionX * 2, RenderResolutionY * 2, false, SurfaceFormat.Color,
                     DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
             }
@@ -244,7 +245,7 @@ namespace Rampastring.XNAUI
         /// </summary>
         /// <param name="content">The game content manager.</param>
         /// <param name="contentPath">The path where the ContentManager should load files from (including SpriteFont files).</param>
-        public void Initialize(ContentManager content, string contentPath)
+        public void Initialize(ContentManager content, string contentPath, bool disableIME = false)
         {
             base.Initialize();
 
@@ -264,6 +265,8 @@ namespace Rampastring.XNAUI
 #if XNA
             KeyboardEventInput.Initialize(Game.Window);
 #endif
+            if (!disableIME)
+                IMEHandler = IMEHandler.CreateIMEHandler(Game);
         }
 
         private void GameWindowManager_GameWindowClosing(object sender, EventArgs e)
@@ -294,7 +297,7 @@ namespace Rampastring.XNAUI
             {
                 throw new InvalidOperationException("WindowManager.AddAndInitializeControl: Control " + control.Name + " already exists!");
             }
-            
+
             control.Initialize();
             Controls.Add(control);
         }
@@ -557,7 +560,7 @@ namespace Rampastring.XNAUI
             {
                 XNAControl control = Controls[i];
 
-                if (HasFocus && control.InputEnabled && control.Enabled && 
+                if (HasFocus && control.InputEnabled && control.Enabled &&
                     (activeControl == null &&
                     control.GetWindowRectangle().Contains(Cursor.Location)
                     ||
@@ -652,6 +655,7 @@ namespace Rampastring.XNAUI
 
 #if DEBUG
             Renderer.DrawString("Active control " + activeControlName, 0, Vector2.Zero, Color.Red, 1.0f);
+            Renderer.DrawString("IME Status " + IMEHandler?.Enabled, 0, new Vector2(0, 20), Color.Red, 1.0f);
 #endif
 
             if (Cursor.Visible)

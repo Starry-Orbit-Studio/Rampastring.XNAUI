@@ -164,6 +164,10 @@
     <Folder Include="Resources\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\MonoGame.IMEHelper\MonoGame.IMEHelper.csproj">
+      <Project>{2f2bdfdd-18e8-41cf-960d-0fe28662d1c6}</Project>
+      <Name>MonoGame.IMEHelper</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Rampastring.Tools\Rampastring.Tools.csproj">
       <Project>{9f40961f-535a-480c-93c5-6877ed6a8626}</Project>
       <Name>Rampastring.Tools</Name>

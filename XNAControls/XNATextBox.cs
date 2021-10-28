@@ -1,10 +1,15 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using MonoGame.IMEHelper;
+
 using Rampastring.Tools;
 using Rampastring.XNAUI.Input;
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
+
+using TextInputEventArgs = Microsoft.Xna.Framework.TextInputEventArgs;
+using IMETextInputEventArgs = MonoGame.IMEHelper.TextInputEventArgs;
 
 namespace Rampastring.XNAUI.XNAControls
 {
@@ -26,6 +31,20 @@ namespace Rampastring.XNAUI.XNAControls
         /// <param name="windowManager">The WindowManager that will be associated with this control.</param>
         public XNATextBox(WindowManager windowManager) : base(windowManager)
         {
+            if (WindowManager.IMEHandler == null)
+                return;
+
+            WindowManager.IMEHandler.TextInput += IMEHandler_TextInput;
+#if !WINDOWSGL
+            WindowManager.IMEHandler.TextComposition += (o, e) =>
+            {
+                var rect = new Rectangle(
+                    X + Parent?.X ?? 0,
+                    Y + Parent?.Y ?? 0,
+                    Width, Height);
+                WindowManager.IMEHandler?.SetTextInputRect(ref rect);
+            };
+#endif
         }
 
         /// <summary>
@@ -216,6 +235,12 @@ namespace Rampastring.XNAUI.XNAControls
             Keyboard.OnKeyPressed += Keyboard_OnKeyPressed;
         }
 
+        private void IMEHandler_TextInput(object sender, IMETextInputEventArgs e)
+        {
+            if (WindowManager.IMEHandler?.Enabled == true)
+                HandleCharInput(e.Character);
+        }
+
 #if XNA
         private void KeyboardEventInput_CharEntered(object sender, KeyboardEventArgs e)
         {
@@ -224,7 +249,8 @@ namespace Rampastring.XNAUI.XNAControls
 #else
         private void Window_TextInput(object sender, TextInputEventArgs e)
         {
-            HandleCharInput(e.Character);
+            if (WindowManager.IMEHandler?.Enabled == false)
+                HandleCharInput(e.Character);
         }
 #endif
 
@@ -235,45 +261,45 @@ namespace Rampastring.XNAUI.XNAControls
 
             switch (character)
             {
-                /*/ There are a bunch of keys that are detected as text input on
-                 * Windows builds of MonoGame, but not on WindowsGL or Linux builds of MonoGame.
-                 * We already handle these keys (enter, tab, backspace, escape) by other means,
-                 * so we don't want to handle them also as text input on Windows to avoid 
-                 * potentially harmful extra triggering of the InputReceived event.
-                 * So, we detect that input here and return on these keys.
-                /*/
-                case '\r':      // Enter / return
-                case '\x0009':  // Tab
-                case '\b':      // Backspace
-                case '\x001b':  // ESC
-                    return;
-                default:
-                    if (text.Length == MaximumTextLength)
-                        break;
-
-                    // Don't allow typing characters that don't exist in the spritefont
-                    if (Renderer.GetSafeString(character.ToString(), FontIndex) != character.ToString())
-                        break;
-
-                    if (!AllowCharacterInput(character))
-                        break;
-
-                    text = text.Insert(InputPosition, character.ToString());
-                    InputPosition++;
-
-                    if (TextEndPosition == text.Length - 1 ||
-                        InputPosition > TextEndPosition)
-                    {
-                        TextEndPosition++;
-
-                        while (!TextFitsBox())
-                        {
-                            TextStartPosition++;
-                        }
-                    }
-
-                    TextChanged?.Invoke(this, EventArgs.Empty);
+            /*/ There are a bunch of keys that are detected as text input on
+             * Windows builds of MonoGame, but not on WindowsGL or Linux builds of MonoGame.
+             * We already handle these keys (enter, tab, backspace, escape) by other means,
+             * so we don't want to handle them also as text input on Windows to avoid 
+             * potentially harmful extra triggering of the InputReceived event.
+             * So, we detect that input here and return on these keys.
+            /*/
+            case '\r':      // Enter / return
+            case '\x0009':  // Tab
+            case '\b':      // Backspace
+            case '\x001b':  // ESC
+                return;
+            default:
+                if (text.Length == MaximumTextLength)
                     break;
+
+                // Don't allow typing characters that don't exist in the spritefont
+                if (Renderer.GetSafeString(character.ToString(), FontIndex) != character.ToString())
+                    break;
+
+                if (!AllowCharacterInput(character))
+                    break;
+
+                text = text.Insert(InputPosition, character.ToString());
+                InputPosition++;
+
+                if (TextEndPosition == text.Length - 1 ||
+                    InputPosition > TextEndPosition)
+                {
+                    TextEndPosition++;
+
+                    while (!TextFitsBox())
+                    {
+                        TextStartPosition++;
+                    }
+                }
+
+                TextChanged?.Invoke(this, EventArgs.Empty);
+                break;
             }
 
             barTimer = TimeSpan.Zero;
@@ -309,101 +335,101 @@ namespace Rampastring.XNAUI.XNAControls
         {
             switch (key)
             {
-                case Keys.Home:
-                    if (text.Length != 0)
-                    {
-                        TextStartPosition = 0;
-                        TextEndPosition = 0;
-                        InputPosition = 0;
-
-                        while (true)
-                        {
-                            if (TextEndPosition < text.Length)
-                            {
-                                TextEndPosition++;
-
-                                if (!TextFitsBox())
-                                {
-                                    TextEndPosition--;
-                                    break;
-                                }
-
-                                continue;
-                            }
-
-                            break;
-                        }
-                    }
-
-                    return true;
-                case Keys.End:
-                    TextEndPosition = text.Length;
-                    InputPosition = text.Length;
+            case Keys.Home:
+                if (text.Length != 0)
+                {
                     TextStartPosition = 0;
+                    TextEndPosition = 0;
+                    InputPosition = 0;
 
                     while (true)
                     {
-                        if (!TextFitsBox())
+                        if (TextEndPosition < text.Length)
                         {
-                            TextStartPosition++;
+                            TextEndPosition++;
+
+                            if (!TextFitsBox())
+                            {
+                                TextEndPosition--;
+                                break;
+                            }
+
                             continue;
                         }
 
                         break;
                     }
+                }
 
-                    return true;
-                case Keys.X:
-                    if (!Keyboard.IsCtrlHeldDown())
-                        break;
+                return true;
+            case Keys.End:
+                TextEndPosition = text.Length;
+                InputPosition = text.Length;
+                TextStartPosition = 0;
 
-                    if (!string.IsNullOrEmpty(text))
+                while (true)
+                {
+                    if (!TextFitsBox())
                     {
-                        System.Windows.Forms.Clipboard.SetText(text);
-                        Text = string.Empty;
-                        InputReceived?.Invoke(this, EventArgs.Empty);
+                        TextStartPosition++;
+                        continue;
                     }
 
-                    return true;
-                case Keys.V:
-                    if (!Keyboard.IsCtrlHeldDown())
-                        break;
+                    break;
+                }
 
-                    // Replace newlines with spaces
-                    // https://stackoverflow.com/questions/238002/replace-line-breaks-in-a-string-c-sharp
-                    string textToAdd = Regex.Replace(System.Windows.Forms.Clipboard.GetText(), @"\r\n?|\n", " ");
-                    Text = Text + Renderer.GetSafeString(textToAdd, FontIndex);
-                    InputReceived?.Invoke(this, EventArgs.Empty);
+                return true;
+            case Keys.X:
+                if (!Keyboard.IsCtrlHeldDown())
+                    break;
 
-                    goto case Keys.End;
-                case Keys.C:
-                    if (!Keyboard.IsCtrlHeldDown())
-                        break;
-
-                    if (!string.IsNullOrEmpty(text))
-                        System.Windows.Forms.Clipboard.SetText(text);
-
-                    return true;
-                case Keys.Enter:
-                    EnterPressed?.Invoke(this, EventArgs.Empty);
-                    return true;
-                case Keys.Escape:
-                    InputPosition = 0;
+                if (!string.IsNullOrEmpty(text))
+                {
+                    System.Windows.Forms.Clipboard.SetText(text);
                     Text = string.Empty;
                     InputReceived?.Invoke(this, EventArgs.Empty);
-                    return true;
-                case Keys.Tab:
-                    if (Keyboard.IsShiftHeldDown())
-                    {
-                        if (PreviousControl != null)
-                            WindowManager.SelectedControl = PreviousControl;
-                    }
-                    else if (NextControl != null)
-                    {
-                        WindowManager.SelectedControl = NextControl;
-                    }
+                }
 
-                    return true;
+                return true;
+            case Keys.V:
+                if (!Keyboard.IsCtrlHeldDown())
+                    break;
+
+                // Replace newlines with spaces
+                // https://stackoverflow.com/questions/238002/replace-line-breaks-in-a-string-c-sharp
+                string textToAdd = Regex.Replace(System.Windows.Forms.Clipboard.GetText(), @"\r\n?|\n", " ");
+                Text = Text + Renderer.GetSafeString(textToAdd, FontIndex);
+                InputReceived?.Invoke(this, EventArgs.Empty);
+
+                goto case Keys.End;
+            case Keys.C:
+                if (!Keyboard.IsCtrlHeldDown())
+                    break;
+
+                if (!string.IsNullOrEmpty(text))
+                    System.Windows.Forms.Clipboard.SetText(text);
+
+                return true;
+            case Keys.Enter:
+                EnterPressed?.Invoke(this, EventArgs.Empty);
+                return true;
+            case Keys.Escape:
+                InputPosition = 0;
+                Text = string.Empty;
+                InputReceived?.Invoke(this, EventArgs.Empty);
+                return true;
+            case Keys.Tab:
+                if (Keyboard.IsShiftHeldDown())
+                {
+                    if (PreviousControl != null)
+                        WindowManager.SelectedControl = PreviousControl;
+                }
+                else if (NextControl != null)
+                {
+                    WindowManager.SelectedControl = NextControl;
+                }
+
+                return true;
             }
 
             return false;
@@ -431,7 +457,7 @@ namespace Rampastring.XNAUI.XNAControls
                 for (int i = TextStartPosition; i < TextEndPosition - TextStartPosition; i++)
                 {
                     text.Append(Text[i]);
-                    if (Renderer.GetTextDimensions(text.ToString(), FontIndex).X + 
+                    if (Renderer.GetTextDimensions(text.ToString(), FontIndex).X +
                         TEXT_HORIZONTAL_MARGIN > x)
                     {
                         inputPosition = i - 1;
@@ -581,15 +607,28 @@ namespace Rampastring.XNAUI.XNAControls
             FillControlArea(BackColor);
 
             if (WindowManager.SelectedControl == this && Enabled && WindowManager.HasFocus)
+            {
                 DrawRectangle(new Rectangle(0, 0, Width, Height), ActiveBorderColor);
+
+                if (WindowManager.IMEHandler?.Enabled == false)
+                    WindowManager.IMEHandler?.StartTextComposition();
+            }
             else
+            {
                 DrawRectangle(new Rectangle(0, 0, Width, Height), IdleBorderColor);
+
+                if (WindowManager.IMEHandler?.Enabled == true)
+                    WindowManager.IMEHandler?.StopTextComposition();
+            }
 
             DrawStringWithShadow(Text.Substring(TextStartPosition, TextEndPosition - TextStartPosition),
                 FontIndex, new Vector2(TEXT_HORIZONTAL_MARGIN, TEXT_VERTICAL_MARGIN),
                 TextColor);
 
-            if (WindowManager.SelectedControl == this && Enabled && WindowManager.HasFocus &&
+            if (WindowManager.IMEHandler?.Composition.Length == 0 &&
+                WindowManager.SelectedControl == this &&
+                Enabled &&
+                WindowManager.HasFocus &&
                 barTimer.TotalSeconds < BAR_ON_TIME)
             {
                 int barLocationX = TEXT_HORIZONTAL_MARGIN;
@@ -600,6 +639,51 @@ namespace Rampastring.XNAUI.XNAControls
                 FillRectangle(new Rectangle(barLocationX, 2, 1, Height - 4), Color.White);
             }
 
+#if !WINDOWSGL
+            if (WindowManager.IMEHandler?.Enabled == true)
+            {
+                var drawPos = new Vector2(Renderer.GetTextDimensions(Text.Substring(TextStartPosition, InputPosition - TextStartPosition), FontIndex).X + 6, 2);
+                var measStr = new Vector2(0, Renderer.GetTextDimensions("|", FontIndex).Y);
+                var compColor = Color.White;
+
+                for (var i = 0; i < WindowManager.IMEHandler?.Composition.Length; i++)
+                {
+                    string val = WindowManager.IMEHandler?.Composition[i].ToString();
+                    switch (WindowManager.IMEHandler?.GetCompositionAttr(i))
+                    {
+                    case CompositionAttributes.Converted:
+                        compColor = Color.LightGreen;
+                        break;
+                    case CompositionAttributes.FixedConverted:
+                        compColor = Color.Gray;
+                        break;
+                    case CompositionAttributes.Input:
+                        compColor = Color.Orange;
+                        break;
+                    case CompositionAttributes.InputError:
+                        compColor = Color.Red;
+                        break;
+                    case CompositionAttributes.TargetConverted:
+                        compColor = Color.Yellow;
+                        break;
+                    case CompositionAttributes.TargetNotConverted:
+                        compColor = Color.SkyBlue;
+                        break;
+                    }
+
+
+                    DrawString(val, FontIndex, drawPos, compColor);
+
+                    measStr = Renderer.GetTextDimensions(val, FontIndex);
+                    drawPos += new Vector2(measStr.X, 0);
+                    if (WindowManager.SelectedControl == this && Enabled && WindowManager.HasFocus && barTimer.TotalSeconds < 0.5)
+                    {
+                        if (i + 1 == WindowManager.IMEHandler?.CompositionCursorPos)
+                            DrawRectangle(new Rectangle((int)drawPos.X, (int)drawPos.Y, 1, (int)measStr.Y), Color.White);
+                    }
+                }
+            }
+#endif
             base.Draw(gameTime);
         }
     }
