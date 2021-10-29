@@ -8,7 +8,9 @@ using System;
 using System.Text;
 using System.Text.RegularExpressions;
 
+#if !XNA
 using TextInputEventArgs = Microsoft.Xna.Framework.TextInputEventArgs;
+# endif
 using IMETextInputEventArgs = MonoGame.IMEHelper.TextInputEventArgs;
 
 namespace Rampastring.XNAUI.XNAControls
