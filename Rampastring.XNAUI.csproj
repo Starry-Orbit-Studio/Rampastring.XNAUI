@@ -4,7 +4,7 @@
     <TargetFramework Condition="'$(Platform)'!='XNAFramework'">net45</TargetFramework>
     <TargetFramework Condition="'$(Platform)'=='XNAFramework'">net40</TargetFramework>
     <Version>2.1.1</Version>
-    <OutputPath>bin/$(Configuration)/$(Platform)/</OutputPath>
+    <OutputPath>bin/$(Configuration)/$(Platform)</OutputPath>
     <Platforms>Windows;WindowsGL;XNAFramework;FNA</Platforms>
     <Authors>Rampastring &amp; frg2089</Authors>
     <Description>Rampastring XNA/MonoGame UI Library</Description>
