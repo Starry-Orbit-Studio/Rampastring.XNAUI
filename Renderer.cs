@@ -29,7 +29,7 @@ namespace Rampastring.XNAUI
     {
         private static SpriteBatch spriteBatch;
 
-        private static List<SpriteFont> fonts;
+        private static Dictionary<int, SpriteFont> fonts;
 
         private static Texture2D whitePixelTexture;
 
@@ -40,20 +40,32 @@ namespace Rampastring.XNAUI
         public static void Initialize(GraphicsDevice gd, ContentManager content, string contentPath)
         {
             spriteBatch = new SpriteBatch(gd);
-            fonts = new List<SpriteFont>();
+            fonts = new Dictionary<int, SpriteFont>();
 
             if (!contentPath.EndsWith("/") && !contentPath.EndsWith("\\"))
                 contentPath += Path.DirectorySeparatorChar;
-            content.RootDirectory = contentPath;
+            content.RootDirectory = Path.Combine(contentPath, "Fonts");
 
+            foreach (var path in Directory.GetFiles(content.RootDirectory, ".xnb"))
+            {
+                var name = Path.GetFileNameWithoutExtension(path);
+                var s_index = name.Replace("SpriteFont", string.Empty);
+                if (int.TryParse(s_index, out int index))
+                    fonts.Add(index, content.Load<SpriteFont>(name));
+                else
+                    Tools.Logger.Log("WARN: Cannot Load " + name + ".xnb");
+            }
+
+            content.RootDirectory = contentPath;
             int i = 0;
             while (true)
             {
                 string sfName = string.Format("SpriteFont{0}", i);
 
-                if (File.Exists(contentPath + sfName + ".xnb"))
+                if (File.Exists(Path.Combine(contentPath, sfName + ".xnb")))
                 {
-                    fonts.Add(content.Load<SpriteFont>(sfName));
+                    Tools.Logger.Log("WARN: " + sfName + ".xnb are NOT in Fonts Folder.");
+                    fonts.Add(i, content.Load<SpriteFont>(sfName));
                     i++;
                     continue;
                 }
