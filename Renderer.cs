@@ -46,7 +46,7 @@ namespace Rampastring.XNAUI
                 contentPath += Path.DirectorySeparatorChar;
             content.RootDirectory = Path.Combine(contentPath, "Fonts");
 
-            foreach (var path in Directory.GetFiles(content.RootDirectory, ".xnb"))
+            foreach (var path in Directory.GetFiles(content.RootDirectory, "*.xnb"))
             {
                 var name = Path.GetFileNameWithoutExtension(path);
                 var s_index = name.Replace("SpriteFont", string.Empty);
