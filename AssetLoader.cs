@@ -94,9 +94,9 @@ namespace Rampastring.XNAUI
             {
                 foreach (string searchPath in AssetSearchPaths)
                 {
-                    if (File.Exists(searchPath + name))
+                    if (File.Exists(Path.Combine(searchPath + name)))
                     {
-                        using (FileStream fs = File.OpenRead(searchPath + name))
+                        using (FileStream fs = File.OpenRead(Path.Combine(searchPath + name)))
                         {
                             Texture2D texture = Texture2D.FromStream(graphicsDevice, fs);
                             texture.Name = name;
@@ -304,7 +304,7 @@ namespace Rampastring.XNAUI
             try
             {
                 string[] colorArray = colorString.Split(',');
-                Color color = new Color(Convert.ToByte(colorArray[0]), 
+                Color color = new Color(Convert.ToByte(colorArray[0]),
                     Convert.ToByte(colorArray[1]),
                     Convert.ToByte(colorArray[2]),
                     Convert.ToByte(colorArray[3]));
