@@ -260,13 +260,13 @@ namespace Rampastring.XNAUI.XNAControls
                     FontIndex = Conversions.IntFromString(value, FontIndex);
                     return;
                 case "BorderColor":
-                    BorderColor = AssetLoader.GetRGBAColorFromString(value);
+                    BorderColor = AssetLoader.GetColorFromString(value);
                     return;
                 case "FocusColor":
-                    FocusColor = AssetLoader.GetRGBAColorFromString(value);
+                    FocusColor = AssetLoader.GetColorFromString(value);
                     return;
                 case "BackColor":
-                    BackColor = AssetLoader.GetRGBAColorFromString(value);
+                    BackColor = AssetLoader.GetColorFromString(value);
                     return;
                 case "DisabledItemColor":
                     DisabledItemColor = AssetLoader.GetColorFromString(value);

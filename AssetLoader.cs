@@ -8,6 +8,7 @@ using Rampastring.Tools;
 using Color = Microsoft.Xna.Framework.Color;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Media;
+using System.Linq;
 
 namespace Rampastring.XNAUI
 {
@@ -25,8 +26,8 @@ namespace Rampastring.XNAUI
         private static GraphicsDevice graphicsDevice;
         private static ContentManager contentManager;
 
-        private static List<Texture2D> textureCache;
-        private static List<SoundEffect> soundCache;
+        private static List<WeakReference<Texture2D>> textureCache;
+        private static List<WeakReference<SoundEffect>> soundCache;
 
         private static bool _initialized = false;
 
@@ -45,8 +46,8 @@ namespace Rampastring.XNAUI
 
             graphicsDevice = gd;
             AssetSearchPaths = new List<string>();
-            textureCache = new List<Texture2D>();
-            soundCache = new List<SoundEffect>();
+            textureCache = new List<WeakReference<Texture2D>>();
+            soundCache = new List<WeakReference<SoundEffect>>();
             contentManager = content;
         }
 
@@ -58,19 +59,16 @@ namespace Rampastring.XNAUI
         /// <returns>The texture if it was found and could be loaded, otherwise a dummy texture.</returns>
         public static Texture2D LoadTexture(string name)
         {
-            var cachedTexture = textureCache.Find(t => t.Name == name);
+            Logger.Debug($"Try Load \"{name}\"");
+            Texture2D texture = null;
 
-            if (cachedTexture != null)
-                return cachedTexture;
-
-            var texture = LoadTextureInternal(name);
-            if (texture != null)
+            if (textureCache.Any(x => x.TryGetTarget(out texture) && texture.Name == name))
             {
-                textureCache.Add(texture);
+                Logger.Debug($"Find \"{name}\" from cache");
                 return texture;
             }
 
-            return CreateDummyTexture();
+            return LoadTextureUncached(name);
         }
 
         /// <summary>
@@ -81,10 +79,15 @@ namespace Rampastring.XNAUI
         /// <returns>The texture if it was found and could be loaded, otherwise a dummy texture.</returns>
         public static Texture2D LoadTextureUncached(string name)
         {
+            Logger.Debug($"Try Load \"{name}\" Uncached");
             var texture = LoadTextureInternal(name);
             if (texture != null)
+            {
+                textureCache.Add(new WeakReference<Texture2D>(texture));
                 return texture;
+            }
 
+            Logger.Debug($"WARN: Cannot Find \"{name}\"!");
             return CreateDummyTexture();
         }
 
@@ -94,9 +97,11 @@ namespace Rampastring.XNAUI
             {
                 foreach (string searchPath in AssetSearchPaths)
                 {
-                    if (File.Exists(Path.Combine(searchPath + name)))
+                    Logger.Debug($"Search \"{name}\" in \"{searchPath}\"");
+                    if (File.Exists(Path.Combine(searchPath, name)))
                     {
-                        using (FileStream fs = File.OpenRead(Path.Combine(searchPath + name)))
+                        Logger.Debug($"Find \"{name}\" from \"{searchPath}\"");
+                        using (FileStream fs = File.OpenRead(Path.Combine(searchPath, name)))
                         {
                             Texture2D texture = Texture2D.FromStream(graphicsDevice, fs);
                             texture.Name = name;
@@ -145,9 +150,10 @@ namespace Rampastring.XNAUI
         /// <returns></returns>
         public static bool AssetExists(string name)
         {
+            Logger.Debug($"Try Find \"{name}\"");
             foreach (string searchPath in AssetSearchPaths)
             {
-                if (File.Exists(searchPath + name))
+                if (File.Exists(Path.Combine(searchPath, name)))
                     return true;
             }
 
@@ -208,20 +214,24 @@ namespace Rampastring.XNAUI
         /// <returns>The loaded sound effect, or null if the sound effect isn't found.</returns>
         public static SoundEffect LoadSound(string name)
         {
-            SoundEffect cachedSound = soundCache.Find(se => se.Name == name);
+            Logger.Debug($"Try Load \"{name}\"");
+            SoundEffect cachedSound = null;
 
-            if (cachedSound != null)
+            if (soundCache.Any(x => x.TryGetTarget(out cachedSound) && cachedSound.Name == name))
+            {
+                Logger.Debug($"Find \"{name}\" from cache");
                 return cachedSound;
+            }
 
             foreach (string searchPath in AssetSearchPaths)
             {
-                if (File.Exists(searchPath + name))
+                if (File.Exists(Path.Combine(searchPath, name)))
                 {
-                    using (FileStream fs = File.OpenRead(searchPath + name))
+                    using (FileStream fs = File.OpenRead(Path.Combine(searchPath, name)))
                     {
                         SoundEffect se = SoundEffect.FromStream(fs);
                         se.Name = name;
-                        soundCache.Add(se);
+                        soundCache.Add(new WeakReference<SoundEffect>(se));
                         return se;
                     }
                 }
@@ -251,69 +261,62 @@ namespace Rampastring.XNAUI
         }
 
         /// <summary>
-        /// Creates a color based on a color string in the form "R,G,B" or "R,G,B,A". All values must be between 0 and 255.
-        /// </summary>
-        /// <param name="colorString">The color string in the form "R,G,B,A". All values must be between 0 and 255.</param>
-        /// <returns>A XNA Color struct based on the given string.</returns>
-        public static Color GetColorFromString(string colorString)
-        {
-            try
-            {
-                string[] colorArray = colorString.Split(',');
-
-                int alpha = 255;
-                if (colorArray.Length == 4)
-                {
-                    alpha = Convert.ToByte(colorArray[3]);
-                }
-
-                Color color = new Color(Convert.ToByte(colorArray[0]),
-                    Convert.ToByte(colorArray[1]), Convert.ToByte(colorArray[2]), alpha);
-                return color;
-            }
-            catch
-            {
-                throw new FormatException("AssetLoader.GetColorFromString: Failed to convert " + colorString + " to a valid color!");
-            }
-        }
-
-        /// <summary>
-        /// Creates a color based on a color string in the form "R,G,B". All values must be between 0 and 255.
+        /// Support Format:<br />
+        /// - R, G, B (All values must be between 0 and 255.)<br />
+        /// - R, G, B, A (All values must be between 0 and 255.)<br />
+        /// - #RRGGBB<br />
+        /// - #AARRGGBB<br />
+        /// Creates a color based on a color string in the form string.<br />
         /// Returns a given default color if parsing the given string fails.
         /// </summary>
         /// <param name="colorString">The color string.</param>
         /// <param name="defaultColor">The default color to return if parsing the string fails.</param>
         /// <returns>A XNA Color struct.</returns>
-        public static Color GetColorFromString(string colorString, Color defaultColor)
+        /// <returns>A XNA Color struct based on the given string.</returns>
+        public static Color GetColorFromString(string colorString, Color? defaultColor = null)
         {
             try
             {
-                return GetColorFromString(colorString);
+                if (colorString.StartsWith("#"))
+                {
+                    int color = Convert.ToInt32(colorString.TrimStart('#'), 16);
+                    return new Color(
+                        alpha: (color & 0xFF000000) >> 24,
+                            r: (color & 0x00FF0000) >> 16,
+                            g: (color & 0x0000FF00) >> 8,
+                            b: (color & 0x000000FF) >> 0);
+                }
+                else
+                {
+                    string[] colorArray = colorString.Split(',').Select(x => x.Trim()).ToArray();
+
+                    int alpha = 255;
+                    if (colorArray.Length == 4)
+                        alpha = byte.Parse(colorArray[3]);
+
+                    return new Color(
+                        byte.Parse(colorArray[0]),
+                        byte.Parse(colorArray[1]),
+                        byte.Parse(colorArray[2]),
+                        alpha);
+                }
             }
             catch
             {
-                return defaultColor;
+                if (defaultColor.HasValue)
+                    return defaultColor.Value;
+                else
+                    throw new FormatException("AssetLoader.GetColorFromString: Failed to convert " + colorString + " to a valid color!");
             }
         }
 
         /// <summary>
-        /// Creates a color based on a color string in the form "R,G,B,A". All values must be between 0 and 255.
+        /// Creates a color based on a color string in the form "R,G,B,A" or "#AARRGGBB" or "#RRGGBB".<br />
+        /// If colorString is "R,G,B,A". All values must be between 0 and 255.
         /// </summary>
-        public static Color GetRGBAColorFromString(string colorString)
-        {
-            try
-            {
-                string[] colorArray = colorString.Split(',');
-                Color color = new Color(Convert.ToByte(colorArray[0]),
-                    Convert.ToByte(colorArray[1]),
-                    Convert.ToByte(colorArray[2]),
-                    Convert.ToByte(colorArray[3]));
-                return color;
-            }
-            catch
-            {
-                throw new Exception("AssetLoader.GetRGBAColorFromString: Failed to convert " + colorString + " to a valid color!");
-            }
-        }
+        /// <param name="colorString">"R,G,B,A" or "#AARRGGBB" or "#RRGGBB"</param>
+        /// <returns>A XNA Color struct.</returns>
+        [Obsolete("Use GetColorFromString", true)]
+        public static Color GetRGBAColorFromString(string colorString) => throw new NotSupportedException();
     }
 }
