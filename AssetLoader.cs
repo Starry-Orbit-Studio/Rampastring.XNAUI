@@ -160,6 +160,19 @@ namespace Rampastring.XNAUI
             return false;
         }
 
+        internal static string GetAssetPath(string name)
+        {
+            Logger.Debug($"Try Find \"{name}\"");
+            foreach (string searchPath in AssetSearchPaths)
+            {
+                var path = Path.Combine(searchPath, name);
+                if (File.Exists(path))
+                    return path;
+            }
+
+            return string.Empty;
+        }
+
         /// <summary>
         /// Creates a one-colored texture.
         /// </summary>

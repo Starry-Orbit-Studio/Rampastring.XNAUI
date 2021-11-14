@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework;
+﻿using FontStashSharp;
+
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Rampastring.Tools;
@@ -63,10 +65,8 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         public bool AllowChecking { get; set; } = true;
 
-        /// <summary>
-        /// The index of the text font.
-        /// </summary>
-        public int FontIndex { get; set; }
+        public string Font { get; set; }
+        public int FontSize { get; set; }
 
         /// <summary>
         /// The space, in pixels, between the check box and its text.
@@ -153,9 +153,6 @@ namespace Rampastring.XNAUI.XNAControls
         {
             switch (key)
             {
-                case "FontIndex":
-                    FontIndex = Conversions.IntFromString(value, 0);
-                    return;
                 case "HighlightColor":
                     HighlightColor = AssetLoader.GetColorFromString(value);
                     return;
@@ -167,6 +164,12 @@ namespace Rampastring.XNAUI.XNAControls
                     return;
                 case "Checked":
                     Checked = Conversions.BooleanFromString(value, true);
+                    return;
+                case nameof(Font):
+                    Font = value;
+                    return;
+                case nameof(FontSize):
+                    FontSize = Conversions.IntFromString(value, 12);
                     return;
             }
 
@@ -183,7 +186,7 @@ namespace Rampastring.XNAUI.XNAControls
 
             if (!string.IsNullOrEmpty(Text))
             {
-                Vector2 textDimensions = Renderer.GetTextDimensions(Text, FontIndex);
+                Vector2 textDimensions = Renderer.GetTextDimensions(Text, GetFont());
 
                 TextLocationY = (CheckedTexture.Height - (int)textDimensions.Y) / 2 - 1;
 
@@ -280,7 +283,7 @@ namespace Rampastring.XNAUI.XNAControls
                 else
                     textColor = IsActive ? HighlightColor : IdleColor;
 
-                DrawStringWithShadow(Text, FontIndex,
+                DrawStringWithShadow(Text, GetFont(),
                     new Vector2(checkedTexture.Width + TextPadding, textYPosition),
                     textColor);
             }
@@ -314,5 +317,6 @@ namespace Rampastring.XNAUI.XNAControls
 
             base.Draw(gameTime);
         }
+        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 }

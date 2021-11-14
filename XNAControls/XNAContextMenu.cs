@@ -1,5 +1,8 @@
-﻿using Microsoft.Xna.Framework;
+﻿using FontStashSharp;
+
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+
 using System;
 using System.Collections.Generic;
 
@@ -52,7 +55,8 @@ namespace Rampastring.XNAUI.XNAControls
         /// The font index of the context menu item.
         /// If null, the common font index is used.
         /// </summary>
-        public int? FontIndex { get; set; }
+        public string Font { get; set; }
+        public int FontSize { get; set; }
 
         /// <summary>
         /// The texture of the context menu item.
@@ -161,8 +165,10 @@ namespace Rampastring.XNAUI.XNAControls
             set => _disabledItemColor = value;
         }
 
-        public int FontIndex { get; set; }
-        public int HintFontIndex { get; set; }
+        public string Font { get; set; }
+        public int FontSize { get; set; }
+        public string HintFont { get; set; }
+        public int HintFontSize { get; set; }
 
         public int TextHorizontalPadding { get; set; } = 1;
         public int TextVerticalPadding { get; set; } = 1;
@@ -211,7 +217,7 @@ namespace Rampastring.XNAUI.XNAControls
             };
 
             AddItem(item);
-            
+
             if (Enabled)
             {
                 Height += GetItemHeight(item);
@@ -237,9 +243,9 @@ namespace Rampastring.XNAUI.XNAControls
                 {
                     int itemHeight = GetItemHeight(item);
                     height += itemHeight;
-                    item.TextY = (itemHeight - Renderer.GetTextDimensions(item.Text, GetItemFontIndex(item)).Y) / 2;
+                    item.TextY = (itemHeight - Renderer.GetTextDimensions(item.Text, Renderer.GetFont(GetItemFont(item), GetItemFontSize(item))).Y) / 2;
                 }
-                
+
                 if (item.SelectableChecker != null)
                     item.Selectable = item.SelectableChecker();
             }
@@ -359,12 +365,10 @@ namespace Rampastring.XNAUI.XNAControls
         protected int GetItemHeight(XNAContextMenuItem item) =>
              item.Height ?? ItemHeight;
 
-        /// <summary>
-        /// Gets the index of an item's font.
-        /// </summary>
-        /// <param name="item">The item.</param>
-        protected int GetItemFontIndex(XNAContextMenuItem item) =>
-            item.FontIndex ?? FontIndex;
+        protected string GetItemFont(XNAContextMenuItem item) =>
+            item.Font ?? Font;
+        protected int GetItemFontSize(XNAContextMenuItem item) =>
+            item.FontSize == 0 ? FontSize : item.FontSize;
 
         protected Color GetItemTextColor(XNAContextMenuItem item) =>
             item.TextColor ?? ItemColor;
@@ -416,14 +420,15 @@ namespace Rampastring.XNAUI.XNAControls
 
             Color textColor = item.Selectable ? GetItemTextColor(item) : DisabledItemColor;
 
-            DrawStringWithShadow(item.Text, FontIndex, new Vector2(textX, point.Y + TextVerticalPadding), textColor);
+            DrawStringWithShadow(item.Text, GetFont(), new Vector2(textX, point.Y + TextVerticalPadding), textColor);
             if (item.HintText != null)
             {
-                int hintTextX = Width - TextHorizontalPadding - (int)Renderer.GetTextDimensions(item.HintText, HintFontIndex).X;
-                DrawStringWithShadow(item.HintText, HintFontIndex, new Vector2(hintTextX, point.Y + TextVerticalPadding), textColor);
+                int hintTextX = Width - TextHorizontalPadding - (int)Renderer.GetTextDimensions(item.HintText, Renderer.GetFont(HintFont, HintFontSize)).X;
+                DrawStringWithShadow(item.HintText, Renderer.GetFont(HintFont, HintFontSize), new Vector2(hintTextX, point.Y + TextVerticalPadding), textColor);
             }
 
             return itemHeight;
         }
+        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 }

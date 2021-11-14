@@ -1,5 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using FontStashSharp;
+
+using Microsoft.Xna.Framework;
+
 using Rampastring.Tools;
+
 using System;
 
 namespace Rampastring.XNAUI.XNAControls
@@ -24,7 +28,8 @@ namespace Rampastring.XNAUI.XNAControls
             set { _textColor = value; }
         }
 
-        public int FontIndex { get; set; }
+        public string Font { get; set; }
+        public int FontSize { get; set; }
 
         private Vector2 _anchorPoint = Vector2.Zero;
 
@@ -65,7 +70,7 @@ namespace Rampastring.XNAUI.XNAControls
         {
             if (!string.IsNullOrEmpty(base.Text))
             {
-                Vector2 textSize = Renderer.GetTextDimensions(Text, FontIndex);
+                Vector2 textSize = Renderer.GetTextDimensions(Text, GetFont());
 
                 switch (TextAnchor)
                 {
@@ -101,9 +106,6 @@ namespace Rampastring.XNAUI.XNAControls
                     string[] colors = value.Split(',');
                     TextColor = AssetLoader.GetColorFromString(value);
                     return;
-                case "FontIndex":
-                    FontIndex = Conversions.IntFromString(value, 0);
-                    return;
                 case "AnchorPoint":
                     string[] point = value.Split(',');
 
@@ -122,10 +124,18 @@ namespace Rampastring.XNAUI.XNAControls
                         TextAnchor = info;
 
                     return;
+                case nameof(Font):
+                    Font = value;
+                    return;
+                case nameof(FontSize):
+                    FontSize = Conversions.IntFromString(value, 12);
+                    return;
             }
 
             base.ParseAttributeFromINI(iniFile, key, value);
         }
+
+        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
 
         public override void Draw(GameTime gameTime)
         {
@@ -137,7 +147,7 @@ namespace Rampastring.XNAUI.XNAControls
         protected void DrawLabel()
         {
             if (!string.IsNullOrEmpty(Text))
-                DrawStringWithShadow(Text, FontIndex, Vector2.Zero, TextColor);
+                DrawStringWithShadow(Text, GetFont(), Vector2.Zero, TextColor);
         }
     }
 

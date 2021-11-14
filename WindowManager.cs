@@ -122,7 +122,7 @@ namespace Rampastring.XNAUI
         private IGameWindowManager gameWindowManager;
         private RenderTarget2D renderTarget;
         private RenderTarget2D doubledRenderTarget;
-        private bool closingPrevented = false;
+        //private bool closingPrevented = false;
         internal IMEHandler IMEHandler;
         /// <summary>
         /// Sets the rendering (back buffer) resolution of the game.
@@ -332,7 +332,7 @@ namespace Rampastring.XNAUI
 
             Controls.Insert(0, control);
         }
-
+                
         /// <summary>
         /// Centers a control on the game window.
         /// </summary>
@@ -654,8 +654,9 @@ namespace Rampastring.XNAUI
                 WindowWidth - (SceneXPosition * 2), WindowHeight - (SceneYPosition * 2)), Color.White);
 
 #if DEBUG
-            Renderer.DrawString("Active control " + activeControlName, 0, Vector2.Zero, Color.Red, 1.0f);
-            Renderer.DrawString("IME Status " + IMEHandler?.Enabled, 0, new Vector2(0, 20), Color.Red, 1.0f);
+            var font = Renderer.GetFont(Renderer.DefaultFont, 12);
+            Renderer.DrawString("Active control " + activeControlName, font, Vector2.Zero, Color.Red);
+            Renderer.DrawString("IME Status " + IMEHandler?.Enabled, font, new Vector2(0, 20), Color.Red);
 #endif
 
             if (Cursor.Visible)

@@ -2,6 +2,7 @@
 using Rampastring.Tools;
 using System;
 using System.Collections.Generic;
+using System.Windows.Forms;
 
 namespace Rampastring.XNAUI.XNAControls
 {
@@ -50,9 +51,11 @@ namespace Rampastring.XNAUI.XNAControls
 
         public delegate void SelectedIndexChangedEventHandler(object sender, EventArgs e);
         public event SelectedIndexChangedEventHandler SelectedIndexChanged;
-        public int HeaderFontIndex { get; set; } = 1;
+        public string HeaderFont { get; set; }
+        public int HeaderFontSize { get; set; }
 
-        public int FontIndex { get; set; }
+        public string Font { get; set; }
+        public int FontSize { get; set; }
         public int LineHeight { get; set; } = 15;
 
         public bool DrawListBoxBorders { get; set; }
@@ -185,8 +188,17 @@ namespace Rampastring.XNAUI.XNAControls
                 case nameof(DrawSelectionUnderScrollbar):
                     DrawSelectionUnderScrollbar = Conversions.BooleanFromString(value, true);
                     return;
-                case nameof(FontIndex):
-                    FontIndex = Conversions.IntFromString(value, FontIndex);
+                case nameof(Font):
+                    Font = value;
+                    return;
+                case nameof(FontSize):
+                    FontSize = Conversions.IntFromString(value, 12);
+                    return;
+                case nameof(HeaderFont):
+                    HeaderFont = value;
+                    return;
+                case nameof(HeaderFontSize):
+                    HeaderFontSize = Conversions.IntFromString(value, 12);
                     return;
             }
 
@@ -267,7 +279,8 @@ namespace Rampastring.XNAUI.XNAControls
         public void AddColumn(string headerText, int width)
         {
             XNALabel headerLabel = new XNALabel(WindowManager);
-            headerLabel.FontIndex = HeaderFontIndex;
+            headerLabel.Font = HeaderFont;
+            headerLabel.FontSize = HeaderFontSize;
             headerLabel.X = 3;
             headerLabel.Y = 2;
             headerLabel.Text = headerText;
@@ -291,7 +304,8 @@ namespace Rampastring.XNAUI.XNAControls
         public void AddColumn(XNAPanel header)
         {
             XNAListBox listBox = new XNAListBox(WindowManager);
-            listBox.FontIndex = FontIndex;
+            listBox.Font = Font;
+            listBox.FontSize = FontSize;
             listBox.TextBorderDistance = 5;
 
             AddColumn(header, listBox);

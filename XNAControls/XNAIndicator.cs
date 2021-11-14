@@ -1,6 +1,10 @@
-﻿using Microsoft.Xna.Framework;
+﻿using FontStashSharp;
+
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+
 using Rampastring.Tools;
+
 using System;
 using System.Collections.Generic;
 
@@ -49,10 +53,8 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-        /// <summary>
-        /// The index of the text font.
-        /// </summary>
-        public int FontIndex { get; set; }
+        public string Font { get; set; }
+        public int FontSize { get; set; }
 
         /// <summary>
         /// The space, in pixels, between the indicator and its text.
@@ -137,14 +139,17 @@ namespace Rampastring.XNAUI.XNAControls
         {
             switch (key)
             {
-                case "FontIndex":
-                    FontIndex = Conversions.IntFromString(value, 0);
-                    return;
                 case "HighlightColor":
                     HighlightColor = AssetLoader.GetColorFromString(value);
                     return;
                 case "AlphaRate":
                     AlphaRate = Conversions.DoubleFromString(value, AlphaRate);
+                    return;
+                case nameof(Font):
+                    Font = value;
+                    return;
+                case nameof(FontSize):
+                    FontSize = Conversions.IntFromString(value, 12);
                     return;
             }
 
@@ -165,7 +170,7 @@ namespace Rampastring.XNAUI.XNAControls
 
             if (!string.IsNullOrEmpty(Text))
             {
-                Vector2 textDimensions = Renderer.GetTextDimensions(Text, FontIndex);
+                Vector2 textDimensions = Renderer.GetTextDimensions(Text, GetFont());
 
                 TextLocationY = (texture2D.Height - (int)textDimensions.Y) / 2 - 1;
 
@@ -212,7 +217,7 @@ namespace Rampastring.XNAUI.XNAControls
             {
                 Color textColor = IsActive ? HighlightColor : IdleColor;
 
-                DrawStringWithShadow(Text, FontIndex,
+                DrawStringWithShadow(Text, GetFont(),
                     new Vector2(CurrentTexture.Width + TextPadding, textYPosition),
                     textColor);
             }
@@ -237,5 +242,6 @@ namespace Rampastring.XNAUI.XNAControls
 
             base.Draw(gameTime);
         }
+        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 }

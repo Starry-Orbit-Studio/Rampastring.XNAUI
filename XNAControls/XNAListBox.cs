@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Rampastring.Tools;
 using System.Globalization;
 using System.Collections.ObjectModel;
+using FontStashSharp;
 
 namespace Rampastring.XNAUI.XNAControls
 {
@@ -90,10 +91,16 @@ namespace Rampastring.XNAUI.XNAControls
         public int LineHeight
         {
             get => _lineHeight;
-            set { _lineHeight = value; ScrollBar.ScrollStep = value; }
+            set
+            {
+                _lineHeight = value;
+                ScrollBar.ScrollStep = value;
+            }
         }
 
-        public int FontIndex { get; set; }
+
+        public string Font { get; set; }
+        public int FontSize { get; set; }
 
         /// <summary>
         /// If set to false, only the first line will be displayed from items
@@ -311,8 +318,11 @@ namespace Rampastring.XNAUI.XNAControls
                 case nameof(AllowRightClickUnselect):
                     AllowRightClickUnselect = Conversions.BooleanFromString(value, AllowRightClickUnselect);
                     return;
-                case nameof(FontIndex):
-                    FontIndex = Conversions.IntFromString(value, FontIndex);
+                case nameof(Font):
+                    Font = value;
+                    return;
+                case nameof(FontSize):
+                    FontSize = Conversions.IntFromString(value, 12);
                     return;
             }
 
@@ -380,11 +390,12 @@ namespace Rampastring.XNAUI.XNAControls
             listBoxItem.TextChanged += ListBoxItem_TextChanged;
         }
 
-        private void ListBoxItem_TextChanged(object sender, EventArgs e) => 
+        private void ListBoxItem_TextChanged(object sender, EventArgs e) =>
             CheckItemTextForWordWrapAndExcessSize((XNAListBoxItem)sender);
 
         private void CheckItemTextForWordWrapAndExcessSize(XNAListBoxItem listBoxItem)
         {
+            var font = GetFont();
             int width = Width - TextBorderDistance * 2;
             if (EnableScrollbar)
             {
@@ -406,7 +417,7 @@ namespace Rampastring.XNAUI.XNAControls
             }
 
             // Apply word wrap if needed
-            List<string> textLines = Renderer.GetFixedTextLines(listBoxItem.Text, FontIndex, width);
+            List<string> textLines = Renderer.GetFixedTextLines(listBoxItem.Text, font, width);
             if (textLines.Count == 0)
                 textLines.Add(string.Empty);
             listBoxItem.TextLines = textLines;
@@ -416,7 +427,7 @@ namespace Rampastring.XNAUI.XNAControls
 
             if (textLines.Count == 1)
             {
-                Vector2 textSize = Renderer.GetTextDimensions(textLines[0], FontIndex);
+                Vector2 textSize = Renderer.GetTextDimensions(textLines[0], font);
                 listBoxItem.TextYPadding = (LineHeight - (int)textSize.Y) / 2;
 
                 if (listBoxItem.IsHeader)
@@ -903,7 +914,7 @@ namespace Rampastring.XNAUI.XNAControls
             int height = MARGIN + drawInfo.YDrawOffset;
 
             for (int i = drawInfo.TopIndex; i < Items.Count; i++)
-            { 
+            {
                 XNAListBoxItem lbItem = Items[i];
 
                 if (height > Height)
@@ -945,7 +956,7 @@ namespace Rampastring.XNAUI.XNAControls
                         textureYPosition = (LineHeight - textureHeight) / 2;
 
                     DrawTexture(lbItem.Texture,
-                        new Rectangle(x, height + textureYPosition, 
+                        new Rectangle(x, height + textureYPosition,
                         textureWidth, textureHeight), Color.White);
 
                     x += textureWidth + ITEM_TEXT_TEXTURE_MARGIN;
@@ -955,7 +966,7 @@ namespace Rampastring.XNAUI.XNAControls
 
                 for (int j = 0; j < lbItem.TextLines.Count; j++)
                 {
-                    DrawStringWithShadow(lbItem.TextLines[j], FontIndex, 
+                    DrawStringWithShadow(lbItem.TextLines[j], GetFont(),
                         new Vector2(x, height + j * LineHeight + lbItem.TextYPadding),
                         lbItem.TextColor);
                 }
@@ -968,5 +979,6 @@ namespace Rampastring.XNAUI.XNAControls
 
             DrawChildren(gameTime);
         }
+        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 }

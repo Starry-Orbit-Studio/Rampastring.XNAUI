@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework;
+﻿using FontStashSharp;
+
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Rampastring.Tools;
@@ -34,7 +36,8 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-        public int FontIndex { get; set; }
+        public string Font { get; set; }
+        public int FontSize { get; set; }
 
         public bool DisposeTexturesOnTabRemove { get; set; }
 
@@ -96,12 +99,13 @@ namespace Rampastring.XNAUI.XNAControls
             AddTab(text, defaultTexture, pressedTexture, true);
         }
 
+        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
         public void AddTab(string text, Texture2D defaultTexture, Texture2D pressedTexture, bool selectable)
         {
             Tab tab = new Tab(text, defaultTexture, pressedTexture, selectable);
             Tabs.Add(tab);
 
-            Vector2 textSize = Renderer.GetTextDimensions(text, FontIndex);
+            Vector2 textSize = Renderer.GetTextDimensions(text, GetFont());
             tab.TextXPosition = (defaultTexture.Width - (int)textSize.X) / 2;
             tab.TextYPosition = (defaultTexture.Height - (int)textSize.Y) / 2;
 
@@ -172,7 +176,7 @@ namespace Rampastring.XNAUI.XNAControls
 
                 DrawTexture(texture, new Point(x, 0), RemapColor);
 
-                DrawStringWithShadow(tab.Text, FontIndex,
+                DrawStringWithShadow(tab.Text, GetFont(),
                     new Vector2(x + tab.TextXPosition, tab.TextYPosition),
                     tab.Selectable && Enabled ? TextColor : TextColorDisabled);
 

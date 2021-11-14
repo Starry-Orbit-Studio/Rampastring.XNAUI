@@ -6,6 +6,7 @@ using Rampastring.XNAUI.Input;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Microsoft.Xna.Framework.Graphics;
+using FontStashSharp;
 
 namespace Rampastring.XNAUI.XNAControls
 {
@@ -696,7 +697,7 @@ namespace Rampastring.XNAUI.XNAControls
                 Callbacks.Add(new Callback(d, args));
         }
 
-#region Child control management
+        #region Child control management
 
         /// <summary>
         /// Adds a child to the control.
@@ -828,7 +829,7 @@ namespace Rampastring.XNAUI.XNAControls
             drawList = _children.OrderBy(c => c.DrawOrder).ToList();
         }
 
-#endregion
+        #endregion
 
         /// <summary>
         /// Initializes the control.
@@ -960,7 +961,7 @@ namespace Rampastring.XNAUI.XNAControls
                 case "DistanceFromRightBorder":
                     if (Parent != null)
                     {
-                        ClientRectangle = new Rectangle(Parent.Width - Width - Conversions.IntFromString(value, 0), Y, 
+                        ClientRectangle = new Rectangle(Parent.Width - Width - Conversions.IntFromString(value, 0), Y,
                             Width, Height);
                     }
                     return;
@@ -1083,7 +1084,7 @@ namespace Rampastring.XNAUI.XNAControls
                 {
                     XNAControl child = activeChildEnumerator.Current;
 
-                    if (child.Visible && !child.Detached && (child.Focused || (child.InputEnabled && 
+                    if (child.Visible && !child.Detached && (child.Focused || (child.InputEnabled &&
                         child.GetWindowRectangle().Contains(Cursor.Location) && activeChild == null)))
                     {
                         child.IsActive = true;
@@ -1302,7 +1303,7 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-#region Draw helpers
+        #region Draw helpers
 
         private Point drawPoint;
 
@@ -1356,18 +1357,18 @@ namespace Rampastring.XNAUI.XNAControls
         /// <summary>
         /// Draws a string relative to the control's location.
         /// </summary>
-        public void DrawString(string text, int fontIndex, Vector2 location, Color color, float scale = 1.0f)
+        public void DrawString(string text, SpriteFontBase font, Vector2 location, Color color, float scale = 1)
         {
-            Renderer.DrawString(text, fontIndex, 
+            Renderer.DrawString(text, font,
                 new Vector2(location.X + drawPoint.X, location.Y + drawPoint.Y), color, scale);
         }
 
         /// <summary>
         /// Draws a string with a shadow, relative to the control's location.
         /// </summary>
-        public void DrawStringWithShadow(string text, int fontIndex, Vector2 location, Color color, float scale = 1.0f)
+        public void DrawStringWithShadow(string text, SpriteFontBase font, Vector2 location, Color color, float scale = 1)
         {
-            Renderer.DrawStringWithShadow(text, fontIndex, 
+            Renderer.DrawStringWithShadow(text, font,
                 new Vector2(location.X + drawPoint.X, location.Y + drawPoint.Y), color, scale);
         }
 
@@ -1417,7 +1418,7 @@ namespace Rampastring.XNAUI.XNAControls
                 new Vector2(end.X + drawPoint.X, end.Y + drawPoint.Y), color, thickness);
         }
 
-#endregion
+        #endregion
 
         /// <summary>
         /// Called when the mouse cursor enters the control's client rectangle.

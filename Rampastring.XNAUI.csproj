@@ -25,8 +25,8 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <Compile Condition="'$(Platform)'=='FNA'" Remove="PlatformSpecific\WindowsGameWindowManager.cs"/>
-    <Compile Condition="'$(Platform)'!='FNA'" Remove="PlatformSpecific\FNAGameWindowManager.cs"/>
+    <Compile Condition="'$(Platform)'=='FNA'" Remove="PlatformSpecific\WindowsGameWindowManager.cs" />
+    <Compile Condition="'$(Platform)'!='FNA'" Remove="PlatformSpecific\FNAGameWindowManager.cs" />
     <None Include="..\..\README.md" Pack="true" PackagePath="" />
     <None Include="..\..\LICENSE.md" Pack="true" PackagePath="" />
   </ItemGroup>
@@ -34,14 +34,13 @@
   <Import Project="$(MSBuildProjectDirectory)\..\build\Framework.props" />
 
   <ItemGroup>
-    <ProjectReference Include="..\MonoGame.IMEHelper\MonoGame.IMEHelper.csproj">
-      <Project>{2f2bdfdd-18e8-41cf-960d-0fe28662d1c6}</Project>
-      <Name>MonoGame.IMEHelper</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Rampastring.Tools\Rampastring.Tools.csproj">
-      <Project>{9f40961f-535a-480c-93c5-6877ed6a8626}</Project>
-      <Name>Rampastring.Tools</Name>
-    </ProjectReference>
+    <PackageReference Include="Portable.System.ValueTuple" Version="1.0.1" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\FontStashSharp\src\XNA\FontStashSharp.csproj" />
+    <ProjectReference Include="..\MonoGame.IMEHelper\MonoGame.IMEHelper.csproj"/>
+    <ProjectReference Include="..\Rampastring.Tools\Rampastring.Tools.csproj"/>
   </ItemGroup>
 
 </Project>

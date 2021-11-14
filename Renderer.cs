@@ -6,6 +6,9 @@ using Microsoft.Xna.Framework.Content;
 using System.IO;
 using System.Text;
 
+using FontStashSharp;
+using System.Linq;
+
 namespace Rampastring.XNAUI
 {
     public struct SpriteBatchSettings
@@ -29,7 +32,7 @@ namespace Rampastring.XNAUI
     {
         private static SpriteBatch spriteBatch;
 
-        private static Dictionary<int, SpriteFont> fonts;
+        private static Dictionary<string, FontSystem> _fonts = new Dictionary<string, FontSystem>();
 
         private static Texture2D whitePixelTexture;
 
@@ -40,77 +43,40 @@ namespace Rampastring.XNAUI
         public static void Initialize(GraphicsDevice gd, ContentManager content, string contentPath)
         {
             spriteBatch = new SpriteBatch(gd);
-            fonts = new Dictionary<int, SpriteFont>();
-
-            if (!contentPath.EndsWith("/") && !contentPath.EndsWith("\\"))
-                contentPath += Path.DirectorySeparatorChar;
-            content.RootDirectory = Path.Combine(contentPath, "Fonts");
-
-            foreach (var path in Directory.GetFiles(content.RootDirectory, "*.xnb"))
-            {
-                var name = Path.GetFileNameWithoutExtension(path);
-                var s_index = name.Replace("SpriteFont", string.Empty);
-                if (int.TryParse(s_index, out int index))
-                    fonts.Add(index, content.Load<SpriteFont>(name));
-                else
-                    Tools.Logger.Log("WARN: Cannot Load " + name + ".xnb");
-            }
-
-            content.RootDirectory = contentPath;
-            int i = 0;
-            while (true)
-            {
-                string sfName = string.Format("SpriteFont{0}", i);
-
-                if (File.Exists(Path.Combine(contentPath, sfName + ".xnb")))
-                {
-                    Tools.Logger.Log("WARN: " + sfName + ".xnb are NOT in Fonts Folder.");
-                    fonts.Add(i, content.Load<SpriteFont>(sfName));
-                    i++;
-                    continue;
-                }
-
-                break;
-            }
+            AppendFontSystem(Path.Combine(contentPath, "Fonts"));
 
             whitePixelTexture = AssetLoader.CreateTexture(Color.White, 1, 1);
         }
+        private static bool _fontInit = false;
 
-        /// <summary>
-        /// Returns a version of the given string where all characters that don't
-        /// appear in the given font have been replaced with question marks.
-        /// </summary>
-        /// <param name="str">The string.</param>
-        /// <param name="fontIndex">The index of the font.</param>
-        public static string GetSafeString(string str, int fontIndex)
+        public static string DefaultFont
         {
-            SpriteFont sf = fonts[fontIndex];
-
-            StringBuilder sb = new StringBuilder(str);
-
-            for (int i = 0; i < str.Length; i++)
+            get
             {
-                char c = str[i];
-
-                if (c != '\r' && c != '\n' && !sf.Characters.Contains(c))
-                    sb.Replace(c, '?');
+                if (!_fontInit)
+                    throw new InvalidOperationException("Need Init First");
+                return _fonts.Keys.First();
             }
-
-            return sb.ToString();
         }
 
-        /// <summary>
-        /// Returns a that has had its width limited to a specific number.
-        /// Characters that'd cross over the width have been cut.
-        /// </summary>
-        /// <param name="str">The string to limit.</param>
-        /// <param name="fontIndex">The index of the font to use.</param>
-        /// <param name="maxWidth">The maximum width of the string.</param>
-        /// <returns></returns>
-        public static string GetStringWithLimitedWidth(string str, int fontIndex, int maxWidth)
+        public static void AppendFontSystem(string fontFolderPath)
+        {
+            if (!_fontInit)
+            {
+                _fontInit = true;
+            }
+            foreach (var path in Directory.GetFiles(fontFolderPath, "*.ttf"))
+            {
+                Tools.Logger.Debug($"Loading Font from {path}");
+                var name = Path.GetFileNameWithoutExtension(path);
+                var fs = new FontSystem();
+                fs.AddFont(File.OpenRead(path));
+                _fonts.Add(name, fs);
+            }
+        }
+        public static string GetStringWithLimitedWidth(string str, SpriteFontBase spriteFont, int maxWidth)
         {
             var sb = new StringBuilder(str);
-            var spriteFont = fonts[fontIndex];
 
             while (spriteFont.MeasureString(sb.ToString()).X > maxWidth)
             {
@@ -119,15 +85,14 @@ namespace Rampastring.XNAUI
 
             return sb.ToString();
         }
-
-        public static TextParseReturnValue FixText(string text, int fontIndex, int width)
+        public static TextParseReturnValue FixText(string text, SpriteFontBase spriteFont, int width)
         {
-            return TextParseReturnValue.FixText(fonts[fontIndex], width, text);
+            return TextParseReturnValue.FixText(spriteFont, width, text);
         }
 
-        public static List<string> GetFixedTextLines(string text, int fontIndex, int width, bool splitWords = true)
+        public static List<string> GetFixedTextLines(string text, SpriteFontBase spriteFont, int width, bool splitWords = true)
         {
-            return TextParseReturnValue.GetFixedTextLines(fonts[fontIndex], width, text, splitWords);
+            return TextParseReturnValue.GetFixedTextLines(spriteFont, width, text, splitWords);
         }
 
         /// <summary>
@@ -238,7 +203,7 @@ namespace Rampastring.XNAUI
         public static void DrawTexture(Texture2D texture, Rectangle sourceRectangle, Vector2 location, float rotation, Vector2 origin, Vector2 scale, Color color)
         {
 #if !XNA
-            spriteBatch.Draw(texture, location, null, sourceRectangle, origin, rotation, scale, color, SpriteEffects.None, 0f);
+            spriteBatch.Draw(texture, location, sourceRectangle, color, rotation, origin, scale, SpriteEffects.None, 0f);
 #else
             spriteBatch.Draw(texture, location, sourceRectangle, color, rotation, origin, scale, SpriteEffects.None, 0f);
 #endif
@@ -247,7 +212,7 @@ namespace Rampastring.XNAUI
         public static void DrawTexture(Texture2D texture, Vector2 location, float rotation, Vector2 origin, Vector2 scale, Color color)
         {
 #if !XNA
-            spriteBatch.Draw(texture, location, null, null, origin, rotation, scale, color, SpriteEffects.None, 0f);
+            spriteBatch.Draw(texture, location, null, color, rotation, origin, scale, SpriteEffects.None, 0f);
 #else
             spriteBatch.Draw(texture, location, null, color, rotation, origin, scale, SpriteEffects.None, 0f);
 #endif
@@ -305,27 +270,20 @@ namespace Rampastring.XNAUI
             }
         }
 
-        public static void DrawString(string text, int fontIndex, Vector2 location, Color color, float scale = 1.0f)
+        public static void DrawString(string text, SpriteFontBase font, Vector2 location, Color color, float scale = 1)
         {
-            if (fontIndex >= fonts.Count)
-                throw new Exception("Invalid font index: " + fontIndex);
-
-            spriteBatch.DrawString(fonts[fontIndex], text, location, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+            spriteBatch.DrawString(font, text, location, color, new Vector2(scale), 0f, Vector2.Zero, 0f);
         }
-
-        public static void DrawStringWithShadow(string text, int fontIndex, Vector2 location, Color color, float scale = 1.0f)
+        public static void DrawStringWithShadow(string text, SpriteFontBase font, Vector2 location, Color color, float scale = 1)
         {
-            if (fontIndex >= fonts.Count)
-                throw new Exception("Invalid font index: " + fontIndex);
-
 #if XNA
             spriteBatch.DrawString(fonts[fontIndex], text, new Vector2(location.X + 1f, location.Y + 1f), new Color(0, 0, 0, color.A));
 #else
-            spriteBatch.DrawString(fonts[fontIndex], text,
+            spriteBatch.DrawString(font, text,
                 new Vector2(location.X + 1f, location.Y + 1f), new Color((byte)0, (byte)0, (byte)0, color.A),
-                0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+                new Vector2(scale), 0f, Vector2.Zero, 0f);
 #endif
-            spriteBatch.DrawString(fonts[fontIndex], text, location, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+            spriteBatch.DrawString(font, text, location, color, new Vector2(scale), 0f, Vector2.Zero, 0f);
         }
 
         public static void DrawRectangle(Rectangle rect, Color color, int thickness = 1)
@@ -340,13 +298,9 @@ namespace Rampastring.XNAUI
         {
             spriteBatch.Draw(whitePixelTexture, rect, color);
         }
-
-        public static Vector2 GetTextDimensions(string text, int fontIndex)
+        public static Vector2 GetTextDimensions(string text, SpriteFontBase spriteFont)
         {
-            if (fontIndex >= fonts.Count)
-                throw new Exception("Invalid font index: " + fontIndex);
-
-            return fonts[fontIndex].MeasureString(text);
+            return spriteFont.MeasureString(text);
         }
 
         public static void DrawLine(Vector2 start, Vector2 end, Color color, int thickness = 1)
@@ -363,6 +317,25 @@ namespace Rampastring.XNAUI
                 null, color, (float)Math.Atan2(line.Y, line.X), new Vector2(0, 0), SpriteEffects.None, 0f);
         }
 
+        private static Dictionary<(string name, int size), WeakReference<SpriteFontBase>> _fontCache
+            = new Dictionary<(string, int), WeakReference<SpriteFontBase>>();
+
+        public static SpriteFontBase GetFont(string name, int size)
+        {
+            if (string.IsNullOrEmpty(name))
+                name = DefaultFont;
+            if (size >= 0)
+                size = 14;
+
+            SpriteFontBase font;
+
+            if (!_fontCache.TryGetValue((name, size), out var value))
+                _fontCache.Add((name, size), new WeakReference<SpriteFontBase>(font = _fonts[name].GetFont(size)));
+            else if (!value.TryGetTarget(out font))
+                _fontCache[(name, size)].SetTarget(font = _fonts[name].GetFont(size));
+
+            return font;
+        }
         #endregion
     }
 }

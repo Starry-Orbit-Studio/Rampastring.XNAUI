@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework;
+﻿using FontStashSharp;
+
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -31,7 +33,8 @@ namespace Rampastring.XNAUI.XNAControls
 
         public Keys HotKey { get; set; }
 
-        public int FontIndex { get; set; }
+        public string Font { get; set; }
+        public int FontSize { get; set; }
 
         private bool _allowClick = true;
         public bool AllowClick
@@ -182,7 +185,7 @@ namespace Rampastring.XNAUI.XNAControls
 
         private void CalculateTextPosition()
         {
-            Vector2 textSize = Renderer.GetTextDimensions(_text, FontIndex);
+            Vector2 textSize = Renderer.GetTextDimensions(_text, GetFont());
 
             if (textSize.X < Width)
             {
@@ -226,11 +229,6 @@ namespace Rampastring.XNAUI.XNAControls
                 case "AlphaRate":
                     AlphaRate = Conversions.FloatFromString(value, 0.01f);
                     return;
-                case "FontIndex":
-                    FontIndex = Conversions.IntFromString(value, 0);
-                    if (AdaptiveText)
-                        CalculateTextPosition();
-                    return;
                 case "IdleTexture":
                     IdleTexture = AssetLoader.LoadTexture(iniFile.GetStringValue(Name, "IdleTexture", String.Empty));
                     ClientRectangle = new Rectangle(X, Y,
@@ -240,6 +238,12 @@ namespace Rampastring.XNAUI.XNAControls
                     return;
                 case "HoverTexture":
                     HoverTexture = AssetLoader.LoadTexture(iniFile.GetStringValue(Name, "HoverTexture", String.Empty));
+                    return;
+                case nameof(Font):
+                    Font = value;
+                    return;
+                case nameof(FontSize):
+                    FontSize = Conversions.IntFromString(value, 12);
                     return;
             }
 
@@ -318,12 +322,13 @@ namespace Rampastring.XNAUI.XNAControls
             Vector2 textPosition = new Vector2(TextXPosition, TextYPosition);
 
             if (!Enabled || !AllowClick)
-                DrawStringWithShadow(_text, FontIndex, textPosition, TextColorDisabled);
+                DrawStringWithShadow(_text, GetFont(), textPosition, TextColorDisabled);
             else
-                DrawStringWithShadow(_text, FontIndex, textPosition, textColor);
+                DrawStringWithShadow(_text, GetFont(), textPosition, textColor);
 
             base.Draw(gameTime);
         }
+        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 
     enum ButtonAnimationMode

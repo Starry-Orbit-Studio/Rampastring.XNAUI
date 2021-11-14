@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using FontStashSharp;
+
 using Microsoft.Xna.Framework;
 using Rampastring.Tools;
 
@@ -25,7 +27,7 @@ namespace Rampastring.XNAUI.XNAControls
 
             set
             {
-                base.Text = Renderer.FixText(value, FontIndex, Width - TextXMargin * 2).Text;
+                base.Text = Renderer.FixText(value, GetFont(), Width - TextXMargin * 2).Text;
             }
         }
 
@@ -43,7 +45,8 @@ namespace Rampastring.XNAUI.XNAControls
             set { _textColor = value; }
         }
 
-        public int FontIndex { get; set; }
+        public string Font { get; set; }
+        public int FontSize { get; set; }
 
         public int TextXMargin { get; set; } = 3;
 
@@ -60,6 +63,7 @@ namespace Rampastring.XNAUI.XNAControls
 
             base.ParseAttributeFromINI(iniFile, key, value);
         }
+        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
 
         public override void Draw(GameTime gameTime)
         {
@@ -69,7 +73,7 @@ namespace Rampastring.XNAUI.XNAControls
             {
                 var windowRectangle = RenderRectangle();
 
-                DrawStringWithShadow(Text, FontIndex,
+                DrawStringWithShadow(Text, GetFont(),
                     new Vector2(TextXMargin, TextYPosition), TextColor);
             }
 

@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework;
+﻿using FontStashSharp;
+
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Rampastring.Tools;
@@ -100,8 +102,8 @@ namespace Rampastring.XNAUI.XNAControls
                 return Items[SelectedIndex];
             }
         }
-
-        public int FontIndex { get; set; }
+        public string Font { get; set; }
+        public int FontSize { get; set; }
 
         private Color? _borderColor;
 
@@ -256,9 +258,6 @@ namespace Rampastring.XNAUI.XNAControls
                 case "ClickSoundEffect":
                     ClickSoundEffect = new EnhancedSoundEffect(value);
                     return;
-                case "FontIndex":
-                    FontIndex = Conversions.IntFromString(value, FontIndex);
-                    return;
                 case "BorderColor":
                     BorderColor = AssetLoader.GetColorFromString(value);
                     return;
@@ -270,6 +269,12 @@ namespace Rampastring.XNAUI.XNAControls
                     return;
                 case "DisabledItemColor":
                     DisabledItemColor = AssetLoader.GetColorFromString(value);
+                    return;
+                case nameof(Font):
+                    Font = value;
+                    return;
+                case nameof(FontSize):
+                    FontSize = Conversions.IntFromString(value, 12);
                     return;
             }
 
@@ -485,7 +490,7 @@ namespace Rampastring.XNAUI.XNAControls
 
                 if (item.Text != null)
                 {
-                    DrawStringWithShadow(item.Text, FontIndex, 
+                    DrawStringWithShadow(item.Text, GetFont(), 
                         new Vector2(textX, dropDownRect.Y + 2), GetItemTextColor(item));
                 }  
             }
@@ -554,7 +559,8 @@ namespace Rampastring.XNAUI.XNAControls
                 textColor = DisabledItemColor;
 
             if (item.Text != null)
-                DrawStringWithShadow(item.Text, FontIndex, new Vector2(textX, y + 1), textColor);
+                DrawStringWithShadow(item.Text, GetFont(), new Vector2(textX, y + 1), textColor);
         }
+        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 }

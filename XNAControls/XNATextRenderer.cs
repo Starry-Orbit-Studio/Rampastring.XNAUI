@@ -1,4 +1,7 @@
-﻿using Microsoft.Xna.Framework;
+﻿using FontStashSharp;
+
+using Microsoft.Xna.Framework;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,10 +15,11 @@ namespace Rampastring.XNAUI.XNAControls
     /// </summary>
     public struct XNATextPart
     {
-        public XNATextPart(string text, int fontIndex, float scale, Color? color, bool underlined)
+        public XNATextPart(string text, string font, int fontSize, float scale, Color? color, bool underlined)
         {
             _text = text;
-            _fontIndex = fontIndex;
+            _font = font;
+            _fontSize = fontSize;
             _scale = scale;
             _color = color;
             Underlined = underlined;
@@ -23,24 +27,42 @@ namespace Rampastring.XNAUI.XNAControls
             UpdateSize();
         }
 
-        public XNATextPart(string text) : this(text, 0, 1.0f, null, false) { }
+        public XNATextPart(string text) : this(text, Renderer.DefaultFont, 12, 1.0f, null, false) { }
 
-        public XNATextPart(string text, int fontIndex, Color? color) : this(text, fontIndex, 1.0f, color, false) { }
+        public XNATextPart(string text, string font, int fontSize, Color? color) : this(text, font, fontSize, 1.0f, color, false) { }
 
         private string _text;
 
         public string Text
         {
             get => _text;
-            set { _text = value; UpdateSize(); }
+            set
+            {
+                _text = value;
+                UpdateSize();
+            }
         }
 
-        private int _fontIndex;
+        private string _font;
+        private int _fontSize;
 
-        public int FontIndex
+        public string Font
         {
-            get => _fontIndex;
-            set { _fontIndex = value; UpdateSize(); }
+            get => _font;
+            set
+            {
+                _font = value;
+                UpdateSize();
+            }
+        }
+        public int FontSize
+        {
+            get => _fontSize;
+            set
+            {
+                _fontSize = value;
+                UpdateSize();
+            }
         }
 
         private float _scale;
@@ -48,7 +70,11 @@ namespace Rampastring.XNAUI.XNAControls
         public float Scale
         {
             get => _scale;
-            set { _scale = value; UpdateSize(); }
+            set
+            {
+                _scale = value;
+                UpdateSize();
+            }
         }
 
         private Color? _color;
@@ -63,9 +89,10 @@ namespace Rampastring.XNAUI.XNAControls
 
         public Point Size { get; private set; }
 
+        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
         private void UpdateSize()
         {
-            Vector2 size = Renderer.GetTextDimensions(_text, FontIndex) * Scale;
+            Vector2 size = Renderer.GetTextDimensions(_text, GetFont()) * Scale;
             Size = new Point((int)size.X, (int)size.Y);
         }
 
@@ -75,7 +102,7 @@ namespace Rampastring.XNAUI.XNAControls
 
         public void Draw(Point point)
         {
-            Renderer.DrawStringWithShadow(Text, FontIndex, new Vector2(point.X, point.Y), Color, Scale);
+            Renderer.DrawStringWithShadow(Text, GetFont(), new Vector2(point.X, point.Y), Color, Scale);
             if (Underlined)
             {
                 Renderer.DrawRectangle(new Rectangle(point.X, point.Y, (int)(Size.X * Scale), 1), Color, 1);
@@ -147,7 +174,7 @@ namespace Rampastring.XNAUI.XNAControls
         public void AddTextLine(XNATextPart text)
         {
             originalTextParts.Add(new XNATextPart(Environment.NewLine + text.Text,
-                text.FontIndex, text.Scale, text.Color, text.Underlined));
+                text.Font, text.FontSize, text.Scale, text.Color, text.Underlined));
         }
 
         public void ClearTextParts()
@@ -171,8 +198,9 @@ namespace Rampastring.XNAUI.XNAControls
 
             foreach (XNATextPart textPart in originalTextParts)
             {
+                var font = textPart.GetFont();
                 string remainingText = textPart.Text;
-                XNATextPart currentOutputPart = new XNATextPart("", textPart.FontIndex, textPart.Scale, textPart.Color, textPart.Underlined);
+                XNATextPart currentOutputPart = new XNATextPart("", textPart.Font, textPart.FontSize, textPart.Scale, textPart.Color, textPart.Underlined);
 
                 while (true)
                 {
@@ -181,11 +209,11 @@ namespace Rampastring.XNAUI.XNAControls
                         string newLineText = "";
                         if (remainingText.Substring(Environment.NewLine.Length).StartsWith(Environment.NewLine))
                             newLineText = " ";
-                        line = new XNATextLine(new List<XNATextPart>() { new XNATextPart(newLineText, textPart.FontIndex, textPart.Scale, textPart.Color, textPart.Underlined) });
+                        line = new XNATextLine(new List<XNATextPart>() { new XNATextPart(newLineText, textPart.Font, textPart.FontSize, textPart.Scale, textPart.Color, textPart.Underlined) });
                         renderedTextLines.Add(line);
                         remainingText = remainingText.Substring(Environment.NewLine.Length);
                         remainingWidth = Width - (Padding * 2);
-                        currentOutputPart = new XNATextPart("", textPart.FontIndex, textPart.Scale, textPart.Color, textPart.Underlined);
+                        currentOutputPart = new XNATextPart("", textPart.Font, textPart.FontSize, textPart.Scale, textPart.Color, textPart.Underlined);
                         continue;
                     }
 
@@ -193,8 +221,8 @@ namespace Rampastring.XNAUI.XNAControls
                     foreach (string word in words)
                     {
                         string wordWithSpace = word + " ";
-                        int wordWidth = (int)Renderer.GetTextDimensions(word, textPart.FontIndex).X;
-                        int wordWidthWithSpace = (int)Renderer.GetTextDimensions(wordWithSpace, textPart.FontIndex).X;
+                        int wordWidth = (int)Renderer.GetTextDimensions(word, font).X;
+                        int wordWidthWithSpace = (int)Renderer.GetTextDimensions(wordWithSpace, font).X;
                         if (wordWidth < remainingWidth)
                         {
                             remainingWidth -= wordWidthWithSpace;
@@ -205,7 +233,7 @@ namespace Rampastring.XNAUI.XNAControls
                             line.Parts.Add(currentOutputPart);
 
                             remainingWidth = Width - (Padding * 2) - wordWidthWithSpace;
-                            currentOutputPart = new XNATextPart(wordWithSpace, textPart.FontIndex, textPart.Scale, textPart.Color, textPart.Underlined);
+                            currentOutputPart = new XNATextPart(wordWithSpace, textPart.Font, textPart.FontSize, textPart.Scale, textPart.Color, textPart.Underlined);
                             line = new XNATextLine(new List<XNATextPart>());
                             renderedTextLines.Add(line);
                         }
@@ -240,7 +268,7 @@ namespace Rampastring.XNAUI.XNAControls
 
                 foreach (XNATextPart part in line.Parts)
                 {
-                    DrawStringWithShadow(part.Text, part.FontIndex, new Vector2(x, y), part.Color, 1f);
+                    DrawStringWithShadow(part.Text, part.GetFont(), new Vector2(x, y), part.Color);
                     x += part.Width + 1;
                 }
 
