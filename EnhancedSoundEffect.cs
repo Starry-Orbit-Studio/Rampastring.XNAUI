@@ -1,7 +1,9 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
+
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -11,22 +13,21 @@ namespace Rampastring.XNAUI
     /// A toggleable sound effect that can also have a defined priority
     /// and a decay rate for the priority.
     /// </summary>
-    public class EnhancedSoundEffect : IDisposable
+    public sealed class EnhancedSoundEffect : IDisposable
     {
         /// <summary>
         /// Creates a new prioritized sound. Loads the specified sound asset.
         /// </summary>
         /// <param name="assetName">The asset name of the sound file to load.</param>
-        public EnhancedSoundEffect(string assetName)
+        private EnhancedSoundEffect(string assetName) : this(AssetLoader.LoadSound(assetName))
         {
-            soundEffect = AssetLoader.LoadSound(assetName);
         }
 
         /// <summary>
         /// Creates a new enhanced sound. Uses the given sound assert.
         /// </summary>
         /// <param name="soundEffect">The sound effect.</param>
-        public EnhancedSoundEffect(SoundEffect soundEffect)
+        private EnhancedSoundEffect(SoundEffect soundEffect)
         {
             this.soundEffect = soundEffect;
         }
@@ -39,7 +40,7 @@ namespace Rampastring.XNAUI
         /// <param name="priorityDecayRate">The priority decay rate of this sound.</param>
         /// <param name="repeatPrevention">If set above zero, will prevent the sound from being played again
         /// for the specified number of seconds after it has been played.</param>
-        public EnhancedSoundEffect(string assetName, double priority, double priorityDecayRate, float repeatPrevention) : this(assetName)
+        private EnhancedSoundEffect(string assetName, double priority, double priorityDecayRate, float repeatPrevention) : this(assetName)
         {
             Priority = priority;
             PriorityDecayRate = priorityDecayRate;
@@ -109,11 +110,30 @@ namespace Rampastring.XNAUI
         {
             soundEffect?.Dispose();
         }
+
+        private static readonly Dictionary<string, EnhancedSoundEffect> _cached = new Dictionary<string, EnhancedSoundEffect>(StringComparer.OrdinalIgnoreCase);
+        public static EnhancedSoundEffect GetOrCreate(string assetName) => GetOrCreate(assetName, default, default, default);
+        public static EnhancedSoundEffect GetOrCreate(string assetName, double priority, double priorityDecayRate, float repeatPrevention)
+        {
+            assetName = assetName
+                .Replace('\\', Path.DirectorySeparatorChar)
+                .Replace('/', Path.DirectorySeparatorChar)
+                .TrimStart(Path.DirectorySeparatorChar);
+
+            var key = $"{assetName};{priority};{priorityDecayRate};{repeatPrevention}";
+
+            if (!_cached.TryGetValue(key, out EnhancedSoundEffect result))
+            {
+                _cached.Add(key, result = new EnhancedSoundEffect(assetName, priority, priorityDecayRate, repeatPrevention));
+            }
+
+            return result;
+        }
     }
 
     sealed class PrioritizedSoundInstance : IDisposable
     {
-        public PrioritizedSoundInstance(SoundEffectInstance soundInstance, 
+        public PrioritizedSoundInstance(SoundEffectInstance soundInstance,
             double priority, double priorityDecayRate)
         {
             SoundInstance = soundInstance;

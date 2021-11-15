@@ -218,10 +218,10 @@ namespace Rampastring.XNAUI.XNAControls
                     TextColorHover = AssetLoader.GetColorFromString(value);
                     return;
                 case "HoverSoundEffect":
-                    HoverSoundEffect = new EnhancedSoundEffect(value);
+                    HoverSoundEffect = EnhancedSoundEffect.GetOrCreate(value);
                     return;
                 case "ClickSoundEffect":
-                    ClickSoundEffect = new EnhancedSoundEffect(value);
+                    ClickSoundEffect = EnhancedSoundEffect.GetOrCreate(value);
                     return;
                 case "AdaptiveText":
                     AdaptiveText = Conversions.BooleanFromString(value, true);

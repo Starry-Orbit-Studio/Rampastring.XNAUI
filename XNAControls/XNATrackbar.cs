@@ -70,7 +70,7 @@ namespace Rampastring.XNAUI.XNAControls
                     Value = iniFile.GetIntValue(Name, "Value", 0);
                     return;
                 case "ClickSound":
-                    ClickSound = new EnhancedSoundEffect(value);
+                    ClickSound = EnhancedSoundEffect.GetOrCreate(value);
                     return;
             }
 

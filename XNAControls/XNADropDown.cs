@@ -256,7 +256,7 @@ namespace Rampastring.XNAUI.XNAControls
                     ItemHeight = Conversions.IntFromString(value, ItemHeight);
                     return;
                 case "ClickSoundEffect":
-                    ClickSoundEffect = new EnhancedSoundEffect(value);
+                    ClickSoundEffect = EnhancedSoundEffect.GetOrCreate(value);
                     return;
                 case "BorderColor":
                     BorderColor = AssetLoader.GetColorFromString(value);

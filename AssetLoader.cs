@@ -97,7 +97,7 @@ namespace Rampastring.XNAUI
             {
                 foreach (string searchPath in AssetSearchPaths)
                 {
-                    Logger.Debug($"Search \"{name}\" in \"{searchPath}\"");
+                    //Logger.Debug($"Search \"{name}\" in \"{searchPath}\"");
                     if (File.Exists(Path.Combine(searchPath, name)))
                     {
                         Logger.Debug($"Find \"{name}\" from \"{searchPath}\"");
