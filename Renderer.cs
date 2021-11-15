@@ -71,6 +71,7 @@ namespace Rampastring.XNAUI
                 var name = Path.GetFileNameWithoutExtension(path);
                 var fs = new FontSystem();
                 fs.AddFont(File.OpenRead(path));
+                fs.DefaultCharacter = '?';
                 _fonts.Add(name, fs);
             }
         }
