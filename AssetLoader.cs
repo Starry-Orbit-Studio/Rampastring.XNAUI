@@ -182,7 +182,21 @@ namespace Rampastring.XNAUI
         /// <returns>A texture.</returns>
         public static Texture2D CreateTexture(Color color, int width, int height)
         {
-            Texture2D texture = new Texture2D(graphicsDevice, width, height, false, SurfaceFormat.Color);
+            var key = $"{width}:{height}#{color.A:X2}{color.R:X2}{color.G:X2}{color.B:X2}";
+
+            Logger.Debug($"Try Load \"{key}\"");
+
+            Texture2D texture = null;
+
+            if (textureCache.Any(x => x.TryGetTarget(out texture) && texture.Name == key))
+            {
+                Logger.Debug($"Find \"{key}\" from cache");
+                return texture;
+            }
+
+            Logger.Debug($"Create \"{key}\"");
+
+            texture = new Texture2D(graphicsDevice, width, height, false, SurfaceFormat.Color) { Name = key };
 
             Color[] colorArray = new Color[width * height];
 
@@ -191,6 +205,7 @@ namespace Rampastring.XNAUI
 
             texture.SetData(colorArray);
 
+            textureCache.Add(new WeakReference<Texture2D>(texture));
             return texture;
         }
 
