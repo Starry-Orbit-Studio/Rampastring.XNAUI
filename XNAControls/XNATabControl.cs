@@ -3,9 +3,15 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
+
 using Rampastring.Tools;
+
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Rampastring.XNAUI.XNAControls
 {
@@ -94,23 +100,32 @@ namespace Rampastring.XNAUI.XNAControls
             Tabs.RemoveAt(index);
         }
 
-        public void AddTab(string text, Texture2D defaultTexture, Texture2D pressedTexture)
-        {
-            AddTab(text, defaultTexture, pressedTexture, true);
-        }
+        //public void AddTab(string text, Texture2D defaultTexture, Texture2D pressedTexture)
+        //{
+        //    AddTab(text, defaultTexture, pressedTexture, true);
+        //}
 
-        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
-        public void AddTab(string text, Texture2D defaultTexture, Texture2D pressedTexture, bool selectable)
+        //public void AddTab(string text, Texture2D defaultTexture, Texture2D pressedTexture, bool selectable)
+        //{
+        //    Tab tab = new Tab(text, defaultTexture, pressedTexture, selectable);
+        //    Tabs.Add(tab);
+
+        //    Vector2 textSize = Renderer.GetTextDimensions(text, GetFont());
+        //    tab.TextXPosition = (defaultTexture.Width - (int)textSize.X) / 2;
+        //    tab.TextYPosition = (defaultTexture.Height - (int)textSize.Y) / 2;
+
+        //    Width += defaultTexture.Width;
+        //    Height = defaultTexture.Height;
+        //}
+
+
+        public void AddTab(string text, int width) => AddTab(text, width, true);
+
+        public void AddTab(string text, int width, bool selectable)
         {
-            Tab tab = new Tab(text, defaultTexture, pressedTexture, selectable);
+            Tab tab = new Tab(text, selectable);
             Tabs.Add(tab);
-
-            Vector2 textSize = Renderer.GetTextDimensions(text, GetFont());
-            tab.TextXPosition = (defaultTexture.Width - (int)textSize.X) / 2;
-            tab.TextYPosition = (defaultTexture.Height - (int)textSize.Y) / 2;
-
-            Width += defaultTexture.Width;
-            Height = defaultTexture.Height;
+            Width += width;
         }
 
         public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
@@ -124,6 +139,12 @@ namespace Rampastring.XNAUI.XNAControls
                 case "TextColorDisabled":
                     TextColorDisabled = AssetLoader.GetColorFromString(value);
                     return;
+                case nameof(Font):
+                    Font = value;
+                    return;
+                case nameof(FontSize):
+                    FontSize = Conversions.IntFromString(value, 12);
+                    return;
             }
 
             if (key.StartsWith("RemoveTabIndex"))
@@ -131,6 +152,50 @@ namespace Rampastring.XNAUI.XNAControls
                 int index = int.Parse(key.Substring(14));
                 if (Conversions.BooleanFromString(value, false))
                     RemoveTab(index);
+            }
+            else if (key.StartsWith("Tab"))
+            {
+                if (byte.TryParse(key.Substring(3, 1), out var index))
+                {
+                    var tab = Tabs[index];
+                    switch (key.Substring(4))
+                    {
+                        case nameof(Tab.Text):
+                            tab.Text = value;
+                            return;
+                        case nameof(Tab.DefaultTexture):
+                            tab.DefaultTexture = AssetLoader.LoadTexture(value);
+                            Vector2 textSize = Renderer.GetTextDimensions(tab.Text, GetFont());
+                            tab.TextXPosition = (tab.DefaultTexture.Width - (int)textSize.X) / 2;
+                            tab.TextYPosition = (tab.DefaultTexture.Height - (int)textSize.Y) / 2;
+                            if (Height != tab.DefaultTexture.Height)
+                                Height = tab.DefaultTexture.Height;
+                            return;
+                        case nameof(Tab.PressedTexture):
+                            tab.PressedTexture = AssetLoader.LoadTexture(value);
+                            return;
+                    }
+                }
+            }
+            else if (key.StartsWith("DefaultTab"))
+            {
+                Tabs.ForEach(tab =>
+                {
+                    switch (key.Substring(10))
+                    {
+                        case nameof(Tab.DefaultTexture):
+                            tab.DefaultTexture = AssetLoader.LoadTexture(value);
+                            Vector2 textSize = Renderer.GetTextDimensions(tab.Text, GetFont());
+                            tab.TextXPosition = (tab.DefaultTexture.Width - (int)textSize.X) / 2;
+                            tab.TextYPosition = (tab.DefaultTexture.Height - (int)textSize.Y) / 2;
+                            if (Height != tab.DefaultTexture.Height)
+                                Height = tab.DefaultTexture.Height;
+                            return;
+                        case nameof(Tab.PressedTexture):
+                            tab.PressedTexture = AssetLoader.LoadTexture(value);
+                            return;
+                    }
+                });
             }
 
             base.ParseAttributeFromINI(iniFile, key, value);
@@ -183,17 +248,21 @@ namespace Rampastring.XNAUI.XNAControls
                 x += tab.DefaultTexture.Width;
             }
         }
+        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 
     class Tab
     {
         public Tab() { }
 
-        public Tab(string text, Texture2D defaultTexture, Texture2D pressedTexture, bool selectable)
+        public Tab(string text, Texture2D defaultTexture, Texture2D pressedTexture, bool selectable) : this(text, selectable)
         {
-            Text = text;
             DefaultTexture = defaultTexture;
             PressedTexture = pressedTexture;
+        }
+        public Tab(string text, bool selectable)
+        {
+            Text = text;
             Selectable = selectable;
         }
 

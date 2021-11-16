@@ -3,7 +3,9 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
+
 using Rampastring.Tools;
+
 using System;
 
 namespace Rampastring.XNAUI.XNAControls
@@ -170,6 +172,18 @@ namespace Rampastring.XNAUI.XNAControls
                     return;
                 case nameof(FontSize):
                     FontSize = Conversions.IntFromString(value, 12);
+                    return;
+                case nameof(CheckedTexture):
+                    CheckedTexture = AssetLoader.LoadTexture(value);
+                    return;
+                case nameof(ClearTexture):
+                    ClearTexture = AssetLoader.LoadTexture(value);
+                    return;
+                case nameof(DisabledCheckedTexture):
+                    DisabledCheckedTexture = AssetLoader.LoadTexture(value);
+                    return;
+                case nameof(DisabledClearTexture):
+                    DisabledClearTexture = AssetLoader.LoadTexture(value);
                     return;
             }
 

@@ -3,7 +3,9 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
+
 using Rampastring.Tools;
+
 using System;
 using System.Collections.Generic;
 
@@ -233,10 +235,12 @@ namespace Rampastring.XNAUI.XNAControls
         {
             base.Initialize();
 
-            DropDownTexture = AssetLoader.LoadTexture("comboBoxArrow.png");
-            DropDownOpenTexture = AssetLoader.LoadTexture("openedComboBoxArrow.png");
+            DropDownTexture = AssetLoader.CreateTexture(new Color(255, 54, 244), 100, 100);
+            DropDownOpenTexture = AssetLoader.CreateTexture(new Color(255, 54, 244), 100, 100);
+            //DropDownTexture = AssetLoader.LoadTexture("comboBoxArrow.png");
+            //DropDownOpenTexture = AssetLoader.LoadTexture("openedComboBoxArrow.png");
 
-            Height = DropDownTexture.Height;
+            //Height = DropDownTexture.Height;
         }
 
         public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
@@ -248,6 +252,8 @@ namespace Rampastring.XNAUI.XNAControls
                     return;
                 case "DropDownTexture":
                     DropDownTexture = AssetLoader.LoadTextureUncached(value);
+                    if (Height != DropDownTexture.Height)
+                        Height = DropDownTexture.Height;
                     return;
                 case "DropDownOpenTexture":
                     DropDownOpenTexture = AssetLoader.LoadTextureUncached(value);
@@ -482,7 +488,7 @@ namespace Rampastring.XNAUI.XNAControls
                 int textX = 3;
                 if (item.Texture != null)
                 {
-                    DrawTexture(item.Texture, 
+                    DrawTexture(item.Texture,
                         new Rectangle(1, dropDownRect.Y + 2,
                         item.Texture.Width, item.Texture.Height), Color.White);
                     textX += item.Texture.Width + 1;
@@ -490,9 +496,9 @@ namespace Rampastring.XNAUI.XNAControls
 
                 if (item.Text != null)
                 {
-                    DrawStringWithShadow(item.Text, GetFont(), 
+                    DrawStringWithShadow(item.Text, GetFont(),
                         new Vector2(textX, dropDownRect.Y + 2), GetItemTextColor(item));
-                }  
+                }
             }
 
             if (AllowDropDown)

@@ -50,10 +50,13 @@ namespace Rampastring.XNAUI.XNAControls
             base.Initialize();
 
             if (ButtonTexture == null)
-                ButtonTexture = AssetLoader.LoadTexture("trackbarButton.png");
+            {
+                Logger.Log($"WARN: {Name}.{nameof(ButtonTexture)} are not set!");
+                ButtonTexture = AssetLoader.CreateTexture(new Color(255, 54, 244), 100, 100);
+            }
 
-            if (Height == 0)
-                Height = ButtonTexture.Height;
+            //if (Height == 0)
+            //    Height = ButtonTexture.Height;
         }
 
         public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
@@ -71,6 +74,11 @@ namespace Rampastring.XNAUI.XNAControls
                     return;
                 case "ClickSound":
                     ClickSound = EnhancedSoundEffect.GetOrCreate(value);
+                    return;
+                case nameof(ButtonTexture):
+                    ButtonTexture = AssetLoader.LoadTexture(value);
+                    if (Height == 0)
+                        Height = ButtonTexture.Height;
                     return;
             }
 
