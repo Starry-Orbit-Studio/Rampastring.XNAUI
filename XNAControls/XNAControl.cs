@@ -7,12 +7,14 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Microsoft.Xna.Framework.Graphics;
 using FontStashSharp;
+using System.Diagnostics;
 
 namespace Rampastring.XNAUI.XNAControls
 {
     /// <summary>
     /// The base class for a XNA-based UI control.
     /// </summary>
+    [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
     public class XNAControl : DrawableGameComponent
     {
         const double DOUBLE_CLICK_TIME = 1.0;
@@ -1525,6 +1527,11 @@ namespace Rampastring.XNAUI.XNAControls
         public virtual void OnSelectedChanged()
         {
             SelectedChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private string GetDebuggerDisplay()
+        {
+            return $"{Name}: {GetType().Name}";
         }
     }
 }
