@@ -45,8 +45,6 @@ namespace Rampastring.XNAUI.XNAControls
             set { _textColor = value; }
         }
 
-        public string Font { get; set; }
-        public int FontSize { get; set; }
 
         public int TextXMargin { get; set; } = 3;
 
@@ -63,7 +61,6 @@ namespace Rampastring.XNAUI.XNAControls
 
             base.ParseAttributeFromINI(iniFile, key, value);
         }
-        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
 
         public override void Draw(GameTime gameTime)
         {

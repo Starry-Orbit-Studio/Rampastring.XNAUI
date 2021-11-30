@@ -79,14 +79,14 @@ namespace Rampastring.XNAUI.XNAControls
             base.Initialize();
         }
 
-        public override void OnMouseEnter()
+        protected override void OnMouseEnter()
         {
             RemapColor = HoverColor;
 
             base.OnMouseEnter();
         }
 
-        public override void OnMouseLeave()
+        protected override void OnMouseLeave()
         {
             RemapColor = IdleColor;
 

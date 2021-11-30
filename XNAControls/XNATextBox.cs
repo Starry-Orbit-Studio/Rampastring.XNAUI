@@ -124,13 +124,6 @@ namespace Rampastring.XNAUI.XNAControls
         }
 
         /// <summary>
-        /// The index of the spritefont that this textbox uses.
-        /// </summary>
-
-        public string Font { get; set; }
-        public int FontSize { get; set; }
-
-        /// <summary>
         /// The maximum length of the text of this text box, in characters.
         /// </summary>
         public int MaximumTextLength { get; set; } = int.MaxValue;
@@ -248,16 +241,13 @@ namespace Rampastring.XNAUI.XNAControls
 
 #if XNA
         private void KeyboardEventInput_CharEntered(object sender, KeyboardEventArgs e)
-        {
-            HandleCharInput(e.Character);
-        }
 #else
         private void Window_TextInput(object sender, TextInputEventArgs e)
+#endif
         {
             if (WindowManager.IMEHandler?.Enabled == false)
                 HandleCharInput(e.Character);
         }
-#endif
 
         private void HandleCharInput(char character)
         {
@@ -450,7 +440,7 @@ namespace Rampastring.XNAUI.XNAControls
                          GetFont()).X < Width - TEXT_HORIZONTAL_MARGIN * 2;
         }
 
-        public override void OnLeftClick()
+        protected override void OnLeftClick()
         {
             if (WindowManager.SelectedControl == this)
             {
@@ -607,7 +597,6 @@ namespace Rampastring.XNAUI.XNAControls
             barTimer = TimeSpan.Zero;
         }
 
-        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
 
         public override void Draw(GameTime gameTime)
         {

@@ -6,6 +6,8 @@ using Microsoft.Xna.Framework.Graphics;
 
 using Rampastring.Tools;
 
+using SharpDX.Direct3D9;
+
 using System;
 
 namespace Rampastring.XNAUI.XNAControls
@@ -66,9 +68,6 @@ namespace Rampastring.XNAUI.XNAControls
         /// Determines whether the user can (un)check the box by clicking on it.
         /// </summary>
         public bool AllowChecking { get; set; } = true;
-
-        public string Font { get; set; }
-        public int FontSize { get; set; }
 
         /// <summary>
         /// The space, in pixels, between the check box and its text.
@@ -150,44 +149,53 @@ namespace Rampastring.XNAUI.XNAControls
 
             base.Initialize();
         }
-
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        public override void GetAttributes()
         {
-            switch (key)
+            base.GetAttributes();
+            SetTextPositionAndSize();
+        }
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
+        {
+            switch (property)
             {
                 case "HighlightColor":
-                    HighlightColor = AssetLoader.GetColorFromString(value);
+                    if (this.TryGet(property, out Color color))
+                        HighlightColor = color;
+                    return;
+                case nameof(IdleColor):
+                    if (this.TryGet(property, out color))
+                        IdleColor = color;
                     return;
                 case "AlphaRate":
-                    AlphaRate = Conversions.DoubleFromString(value, AlphaRate);
+                    if (this.TryGet(property, out double d))
+                        AlphaRate = d;
                     return;
                 case "AllowChecking":
-                    AllowChecking = Conversions.BooleanFromString(value, true);
+                    if (this.TryGet(property, out bool b))
+                        AllowChecking = b;
                     return;
                 case "Checked":
-                    Checked = Conversions.BooleanFromString(value, true);
-                    return;
-                case nameof(Font):
-                    Font = value;
-                    return;
-                case nameof(FontSize):
-                    FontSize = Conversions.IntFromString(value, 12);
+                    if (this.TryGet(property, out b))
+                        Checked = b;
                     return;
                 case nameof(CheckedTexture):
-                    CheckedTexture = AssetLoader.LoadTexture(value);
+                    if (this.TryGet(property, out Texture2D t))
+                        CheckedTexture = t;
                     return;
                 case nameof(ClearTexture):
-                    ClearTexture = AssetLoader.LoadTexture(value);
+                    if (this.TryGet(property, out t))
+                        ClearTexture = t;
                     return;
                 case nameof(DisabledCheckedTexture):
-                    DisabledCheckedTexture = AssetLoader.LoadTexture(value);
+                    if (this.TryGet(property, out t))
+                        DisabledCheckedTexture = t;
                     return;
                 case nameof(DisabledClearTexture):
-                    DisabledClearTexture = AssetLoader.LoadTexture(value);
+                    if (this.TryGet(property, out t))
+                        DisabledClearTexture = t;
                     return;
             }
-
-            base.ParseAttributeFromINI(iniFile, key, value);
+            base.ParseAttributeFromUIConfigurations(property, type);
         }
 
         /// <summary>
@@ -214,7 +222,7 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-        public override void OnMouseEnter()
+        protected override void OnMouseEnter()
         {
             if (AllowChecking)
             {
@@ -227,7 +235,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// <summary>
         /// Handles left mouse button clicks on the check box.
         /// </summary>
-        public override void OnLeftClick()
+        protected override void OnLeftClick()
         {
             if (AllowChecking)
             {
@@ -331,6 +339,5 @@ namespace Rampastring.XNAUI.XNAControls
 
             base.Draw(gameTime);
         }
-        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 }

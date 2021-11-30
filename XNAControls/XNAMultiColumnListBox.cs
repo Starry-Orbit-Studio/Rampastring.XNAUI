@@ -54,8 +54,6 @@ namespace Rampastring.XNAUI.XNAControls
         public string HeaderFont { get; set; }
         public int HeaderFontSize { get; set; }
 
-        public string Font { get; set; }
-        public int FontSize { get; set; }
         public int LineHeight { get; set; } = 15;
 
         public bool DrawListBoxBorders { get; set; }

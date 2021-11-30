@@ -165,8 +165,6 @@ namespace Rampastring.XNAUI.XNAControls
             set => _disabledItemColor = value;
         }
 
-        public string Font { get; set; }
-        public int FontSize { get; set; }
         public string HintFont { get; set; }
         public int HintFontSize { get; set; }
 
@@ -243,7 +241,7 @@ namespace Rampastring.XNAUI.XNAControls
                 {
                     int itemHeight = GetItemHeight(item);
                     height += itemHeight;
-                    item.TextY = (itemHeight - Renderer.GetTextDimensions(item.Text, Renderer.GetFont(GetItemFont(item), GetItemFontSize(item))).Y) / 2;
+                    item.TextY = (itemHeight - Renderer.GetTextDimensions(item.Text, GetFont(GetItemFont(item), GetItemFontSize(item))).Y) / 2;
                 }
 
                 if (item.SelectableChecker != null)
@@ -295,7 +293,7 @@ namespace Rampastring.XNAUI.XNAControls
                 HoveredIndex = -1;
         }
 
-        public override void OnLeftClick()
+        protected override void OnLeftClick()
         {
             base.OnLeftClick();
 
@@ -423,12 +421,11 @@ namespace Rampastring.XNAUI.XNAControls
             DrawStringWithShadow(item.Text, GetFont(), new Vector2(textX, point.Y + TextVerticalPadding), textColor);
             if (item.HintText != null)
             {
-                int hintTextX = Width - TextHorizontalPadding - (int)Renderer.GetTextDimensions(item.HintText, Renderer.GetFont(HintFont, HintFontSize)).X;
-                DrawStringWithShadow(item.HintText, Renderer.GetFont(HintFont, HintFontSize), new Vector2(hintTextX, point.Y + TextVerticalPadding), textColor);
+                int hintTextX = Width - TextHorizontalPadding - (int)Renderer.GetTextDimensions(item.HintText, GetFont(HintFont, HintFontSize)).X;
+                DrawStringWithShadow(item.HintText, GetFont(HintFont, HintFontSize), new Vector2(hintTextX, point.Y + TextVerticalPadding), textColor);
             }
 
             return itemHeight;
         }
-        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 }

@@ -202,7 +202,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// <summary>
         /// Scrolls the scrollbar when it's clicked on.
         /// </summary>
-        public override void OnLeftClick()
+        protected override void OnLeftClick()
         {
             base.OnLeftClick();
 
@@ -213,7 +213,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// Scrolls the scrollbar if the user presses the mouse left button
         /// while moving the cursor over the scrollbar.
         /// </summary>
-        public override void OnMouseMove()
+        protected override void OnMouseMove()
         {
             base.OnMouseMove();
 

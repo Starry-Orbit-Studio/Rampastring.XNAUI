@@ -4,7 +4,9 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+
 using Rampastring.Tools;
+
 using System;
 
 namespace Rampastring.XNAUI.XNAControls
@@ -14,7 +16,7 @@ namespace Rampastring.XNAUI.XNAControls
     /// </summary>
     public class XNAButton : XNAControl
     {
-        public XNAButton(WindowManager windowManager) : base(windowManager) 
+        public XNAButton(WindowManager windowManager) : base(windowManager)
         {
             AlphaRate = UISettings.ActiveSettings.DefaultAlphaRate;
         }
@@ -32,9 +34,6 @@ namespace Rampastring.XNAUI.XNAControls
         public float HoverTextureAlpha { get; private set; } = 0.0f;
 
         public Keys HotKey { get; set; }
-
-        public string Font { get; set; }
-        public int FontSize { get; set; }
 
         private bool _allowClick = true;
         public bool AllowClick
@@ -108,7 +107,7 @@ namespace Rampastring.XNAUI.XNAControls
 
         private bool cursorOnControl = false;
 
-        public override void OnMouseEnter()
+        protected override void OnMouseEnter()
         {
             base.OnMouseEnter();
 
@@ -132,7 +131,7 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-        public override void OnMouseLeave()
+        protected override void OnMouseLeave()
         {
             base.OnMouseLeave();
 
@@ -150,7 +149,7 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-        public override void OnLeftClick()
+        protected override void OnLeftClick()
         {
             if (!AllowClick)
                 return;
@@ -179,7 +178,7 @@ namespace Rampastring.XNAUI.XNAControls
             {
                 CalculateTextPosition();
             }
-            
+
             base.OnClientRectangleUpdated();
         }
 
@@ -206,48 +205,61 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        protected override void ParseLocaleStringsFromStringManager()
         {
-            switch (key)
+            base.ParseLocaleStringsFromStringManager();
+
+            CalculateTextPosition();
+        }
+
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
+        {
+            switch (property)
             {
                 case "TextColorIdle":
-                    TextColorIdle = AssetLoader.GetColorFromString(value);
-                    textColor = TextColorIdle;
+                    if (this.TryGet(property, out Color color))
+                    {
+                        TextColorIdle = color;
+                        textColor = TextColorIdle;
+                    }
                     return;
                 case "TextColorHover":
-                    TextColorHover = AssetLoader.GetColorFromString(value);
+                    if (this.TryGet(property, out color))
+                        TextColorHover = color;
                     return;
                 case "HoverSoundEffect":
-                    HoverSoundEffect = EnhancedSoundEffect.GetOrCreate(value);
+                    if (this.TryGet(property, out EnhancedSoundEffect ese))
+                        HoverSoundEffect = ese;
                     return;
                 case "ClickSoundEffect":
-                    ClickSoundEffect = EnhancedSoundEffect.GetOrCreate(value);
+                    if (this.TryGet(property, out ese))
+                        ClickSoundEffect = ese;
                     return;
                 case "AdaptiveText":
-                    AdaptiveText = Conversions.BooleanFromString(value, true);
+                    if (this.TryGet(property, out bool b))
+                        AdaptiveText = b;
                     return;
                 case "AlphaRate":
-                    AlphaRate = Conversions.FloatFromString(value, 0.01f);
+                    if (this.TryGet(property, out float f))
+                        AlphaRate = f;
                     return;
                 case "IdleTexture":
-                    IdleTexture = AssetLoader.LoadTexture(iniFile.GetStringValue(Name, "IdleTexture", String.Empty));
-                    ClientRectangle = new Rectangle(X, Y,
-                        IdleTexture.Width, IdleTexture.Height);
-                    if (AdaptiveText)
-                        CalculateTextPosition();
+                    if (this.TryGet(property, out Texture2D t))
+                    {
+                        IdleTexture = t;
+                        ClientRectangle = new Rectangle(X, Y,
+                            IdleTexture.Width, IdleTexture.Height);
+                        if (AdaptiveText)
+                            CalculateTextPosition();
+                    }
                     return;
                 case "HoverTexture":
-                    HoverTexture = AssetLoader.LoadTexture(iniFile.GetStringValue(Name, "HoverTexture", String.Empty));
-                    return;
-                case nameof(Font):
-                    Font = value;
-                    return;
-                case nameof(FontSize):
-                    FontSize = Conversions.IntFromString(value, 12);
+                    if (this.TryGet(property, out t))
+                        HoverTexture = t;
                     return;
             }
 
-            base.ParseAttributeFromINI(iniFile, key, value);
+            base.ParseAttributeFromUIConfigurations(property, type);
         }
 
         public override void Kill()
@@ -328,7 +340,6 @@ namespace Rampastring.XNAUI.XNAControls
 
             base.Draw(gameTime);
         }
-        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 
     enum ButtonAnimationMode

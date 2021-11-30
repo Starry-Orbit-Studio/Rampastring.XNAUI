@@ -6,6 +6,8 @@ using Microsoft.Xna.Framework.Graphics;
 
 using Rampastring.Tools;
 
+using SharpDX.Direct3D9;
+
 using System;
 using System.Collections.Generic;
 
@@ -104,8 +106,6 @@ namespace Rampastring.XNAUI.XNAControls
                 return Items[SelectedIndex];
             }
         }
-        public string Font { get; set; }
-        public int FontSize { get; set; }
 
         private Color? _borderColor;
 
@@ -140,6 +140,14 @@ namespace Rampastring.XNAUI.XNAControls
             set { _backColor = value; }
         }
 
+        private Color? _itemBackColor;
+
+        public Color ItemBackColor
+        {
+            get => _itemBackColor ?? BackColor;
+            set => _itemBackColor = value;
+        }
+
         private Color? _textColor;
 
         public Color TextColor
@@ -165,7 +173,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// <summary>
         /// If set, the drop-down is opened upwards rather than downwards.
         /// </summary>
-        public bool OpenUp { get; set; }
+        public bool OpenUp { get; set; } = false;
 
         public Texture2D DropDownTexture { get; set; }
         public Texture2D DropDownOpenTexture { get; set; }
@@ -243,54 +251,65 @@ namespace Rampastring.XNAUI.XNAControls
             //Height = DropDownTexture.Height;
         }
 
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
         {
-            switch (key)
+            switch (property)
             {
                 case "OpenUp":
-                    OpenUp = Conversions.BooleanFromString(value, OpenUp);
+                    if (this.TryGet(property, out bool b))
+                        OpenUp = b;
                     return;
                 case "DropDownTexture":
-                    DropDownTexture = AssetLoader.LoadTextureUncached(value);
-                    if (Height != DropDownTexture.Height)
-                        Height = DropDownTexture.Height;
+                    if (this.TryGet(property, out Texture2D t))
+                    {
+                        DropDownTexture = t;
+                        if (Height != DropDownTexture.Height)
+                            Height = DropDownTexture.Height;
+                    }
                     return;
                 case "DropDownOpenTexture":
-                    DropDownOpenTexture = AssetLoader.LoadTextureUncached(value);
+                    if (this.TryGet(property, out t))
+                        DropDownOpenTexture = t;
                     return;
                 case "ItemHeight":
-                    ItemHeight = Conversions.IntFromString(value, ItemHeight);
+                    if (this.TryGet(property, out int i))
+                        ItemHeight = i;
                     return;
                 case "ClickSoundEffect":
-                    ClickSoundEffect = EnhancedSoundEffect.GetOrCreate(value);
+                    if (this.TryGet(property, out EnhancedSoundEffect e))
+                        ClickSoundEffect = e;
                     return;
                 case "BorderColor":
-                    BorderColor = AssetLoader.GetColorFromString(value);
+                    if (this.TryGet(property, out Color c))
+                        BorderColor = c;
                     return;
                 case "FocusColor":
-                    FocusColor = AssetLoader.GetColorFromString(value);
+                    if (this.TryGet(property, out c))
+                        FocusColor = c;
                     return;
                 case "BackColor":
-                    BackColor = AssetLoader.GetColorFromString(value);
+                    if (this.TryGet(property, out c))
+                        BackColor = c;
+                    return;
+                case nameof(ItemBackColor):
+                    if (this.TryGet(property, out c))
+                        ItemBackColor = c;
                     return;
                 case "DisabledItemColor":
-                    DisabledItemColor = AssetLoader.GetColorFromString(value);
-                    return;
-                case nameof(Font):
-                    Font = value;
-                    return;
-                case nameof(FontSize):
-                    FontSize = Conversions.IntFromString(value, 12);
+                    if (this.TryGet(property, out c))
+                        DisabledItemColor = c;
                     return;
             }
 
-            if (key.StartsWith("Option"))
+            if (property.StartsWith("Option"))
             {
-                AddItem(value);
+                if (this.TryGet(property, out var s))
+                    AddItem(s);
                 return;
             }
 
-            base.ParseAttributeFromINI(iniFile, key, value);
+
+            base.ParseAttributeFromUIConfigurations(property, type);
         }
 
         /// <summary>
@@ -324,7 +343,7 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-        public override void OnMouseLeftDown()
+        protected override void OnMouseLeftDown()
         {
             base.OnMouseLeftDown();
 
@@ -354,7 +373,7 @@ namespace Rampastring.XNAUI.XNAControls
             hoveredIndex = -1;
         }
 
-        public override void OnLeftClick()
+        protected override void OnLeftClick()
         {
             base.OnLeftClick();
 
@@ -396,7 +415,7 @@ namespace Rampastring.XNAUI.XNAControls
             Attach();
         }
 
-        public override void OnMouseScrolled()
+        protected override void OnMouseScrolled()
         {
             if (!AllowDropDown)
                 return;
@@ -548,7 +567,7 @@ namespace Rampastring.XNAUI.XNAControls
                 FillRectangle(new Rectangle(1, y, Width - 2, ItemHeight), FocusColor);
             }
             else
-                FillRectangle(new Rectangle(1, y, Width - 2, ItemHeight), BackColor);
+                FillRectangle(new Rectangle(1, y, Width - 2, ItemHeight), ItemBackColor);
 
             int textX = 2;
             if (item.Texture != null)
@@ -567,6 +586,5 @@ namespace Rampastring.XNAUI.XNAControls
             if (item.Text != null)
                 DrawStringWithShadow(item.Text, GetFont(), new Vector2(textX, y + 1), textColor);
         }
-        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 }

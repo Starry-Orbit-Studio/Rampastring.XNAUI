@@ -39,8 +39,12 @@
   
   <ItemGroup>
     <ProjectReference Include="..\FontStashSharp\src\XNA\FontStashSharp.csproj" />
-    <ProjectReference Include="..\MonoGame.IMEHelper\MonoGame.IMEHelper.csproj"/>
-    <ProjectReference Include="..\Rampastring.Tools\Rampastring.Tools.csproj"/>
+    <ProjectReference Include="..\MonoGame.IMEHelper\MonoGame.IMEHelper.csproj" />
+    <ProjectReference Include="..\Rampastring.Tools\Rampastring.Tools.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="Data\Fonts\" />
   </ItemGroup>
 
 </Project>

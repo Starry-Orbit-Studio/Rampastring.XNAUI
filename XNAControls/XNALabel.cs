@@ -4,6 +4,8 @@ using Microsoft.Xna.Framework;
 
 using Rampastring.Tools;
 
+using SharpDX.Direct3D9;
+
 using System;
 
 namespace Rampastring.XNAUI.XNAControls
@@ -28,8 +30,6 @@ namespace Rampastring.XNAUI.XNAControls
             set { _textColor = value; }
         }
 
-        public string Font { get; set; }
-        public int FontSize { get; set; }
 
         private Vector2 _anchorPoint = Vector2.Zero;
 
@@ -97,45 +97,32 @@ namespace Rampastring.XNAUI.XNAControls
             base.Initialize();
         }
 
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        protected override void ParseLocaleStringsFromStringManager()
         {
-            switch (key)
-            {
-                case "RemapColor":
-                case "TextColor":
-                    string[] colors = value.Split(',');
-                    TextColor = AssetLoader.GetColorFromString(value);
-                    return;
-                case "AnchorPoint":
-                    string[] point = value.Split(',');
-
-                    if (point.Length == 2)
-                    {
-                        AnchorPoint = new Vector2(Conversions.FloatFromString(point[0], 0f),
-                            Conversions.FloatFromString(point[1], 0f));
-                    }
-
-                    return;
-                case "TextAnchor":
-                    LabelTextAnchorInfo info;
-                    bool success = Enum.TryParse(value, out info);
-
-                    if (success)
-                        TextAnchor = info;
-
-                    return;
-                case nameof(Font):
-                    Font = value;
-                    return;
-                case nameof(FontSize):
-                    FontSize = Conversions.IntFromString(value, 12);
-                    return;
-            }
-
-            base.ParseAttributeFromINI(iniFile, key, value);
+            base.ParseLocaleStringsFromStringManager();
+            RefreshClientRectangle();
         }
 
-        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
+        {
+            switch (property)
+            {
+                case "TextColor":
+                    if (this.TryGet(property, out Color c))
+                        TextColor = c;
+                    return;
+                case "AnchorPoint":
+                    if (this.TryGet(property, out Point p))
+                        AnchorPoint = new Vector2(p.X, p.Y);
+                    return;
+                case "TextAnchor":
+                    if (this.TryGet(property, out var s)
+                        && Enum.TryParse(s, out LabelTextAnchorInfo info))
+                        TextAnchor = info;
+                    return;
+            }
+            base.ParseAttributeFromUIConfigurations(property, type);
+        }
 
         public override void Draw(GameTime gameTime)
         {

@@ -53,8 +53,6 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-        public string Font { get; set; }
-        public int FontSize { get; set; }
 
         /// <summary>
         /// The space, in pixels, between the indicator and its text.
@@ -242,6 +240,5 @@ namespace Rampastring.XNAUI.XNAControls
 
             base.Draw(gameTime);
         }
-        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 }

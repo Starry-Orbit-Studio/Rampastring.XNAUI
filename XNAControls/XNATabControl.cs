@@ -6,6 +6,8 @@ using Microsoft.Xna.Framework.Graphics;
 
 using Rampastring.Tools;
 
+using SharpDX.Direct3D9;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +24,8 @@ namespace Rampastring.XNAUI.XNAControls
     {
         public XNATabControl(WindowManager windowManager) : base(windowManager)
         {
+            VirtualProperties.Add("DefaultTabDefaultTexture", typeof(Texture2D));
+            VirtualProperties.Add("DefaultTabPressedTexture", typeof(Texture2D));
         }
 
         public delegate void SelectedIndexChangedEventHandler(object sender, EventArgs e);
@@ -42,8 +46,6 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-        public string Font { get; set; }
-        public int FontSize { get; set; }
 
         public bool DisposeTexturesOnTabRemove { get; set; }
 
@@ -128,80 +130,84 @@ namespace Rampastring.XNAUI.XNAControls
             Width += width;
         }
 
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
         {
-            switch (key)
+            switch (property)
             {
-                case "RemapColor":
                 case "TextColor":
-                    TextColor = AssetLoader.GetColorFromString(value);
+                    if (this.TryGet(property, out Color color))
+                        TextColor = color;
                     return;
                 case "TextColorDisabled":
-                    TextColorDisabled = AssetLoader.GetColorFromString(value);
-                    return;
-                case nameof(Font):
-                    Font = value;
-                    return;
-                case nameof(FontSize):
-                    FontSize = Conversions.IntFromString(value, 12);
+                    if (this.TryGet(property, out color))
+                        TextColorDisabled = color;
                     return;
             }
 
-            if (key.StartsWith("RemoveTabIndex"))
+            if (property.StartsWith("RemoveTabIndex"))
             {
-                int index = int.Parse(key.Substring(14));
-                if (Conversions.BooleanFromString(value, false))
+                int index = int.Parse(property.Substring(14));
+                if (this.TryGet(property, out bool b) && b)
                     RemoveTab(index);
             }
-            else if (key.StartsWith("Tab"))
+            else if (property.StartsWith("Tab"))
             {
-                if (byte.TryParse(key.Substring(3, 1), out var index))
+                if (byte.TryParse(property.Substring(3, 1), out var index))
                 {
                     var tab = Tabs[index];
-                    switch (key.Substring(4))
+                    switch (property.Substring(4))
                     {
                         case nameof(Tab.Text):
-                            tab.Text = value;
+                            if (this.TryGet(property, out var str))
+                                tab.Text = str;
                             return;
                         case nameof(Tab.DefaultTexture):
-                            tab.DefaultTexture = AssetLoader.LoadTexture(value);
-                            Vector2 textSize = Renderer.GetTextDimensions(tab.Text, GetFont());
-                            tab.TextXPosition = (tab.DefaultTexture.Width - (int)textSize.X) / 2;
-                            tab.TextYPosition = (tab.DefaultTexture.Height - (int)textSize.Y) / 2;
-                            if (Height != tab.DefaultTexture.Height)
-                                Height = tab.DefaultTexture.Height;
-                            return;
+                            if (this.TryGet(property, out Texture2D t))
+                            {
+                                tab.DefaultTexture = t;
+                                Vector2 textSize = Renderer.GetTextDimensions(tab.Text, GetFont());
+                                tab.TextXPosition = (tab.DefaultTexture.Width - (int)textSize.X) / 2;
+                                tab.TextYPosition = (tab.DefaultTexture.Height - (int)textSize.Y) / 2;
+                                if (Height != tab.DefaultTexture.Height)
+                                    Height = tab.DefaultTexture.Height;
+                            }
+                                return;
                         case nameof(Tab.PressedTexture):
-                            tab.PressedTexture = AssetLoader.LoadTexture(value);
+                            if (this.TryGet(property, out t))
+                                tab.PressedTexture = t;
                             return;
                     }
                 }
             }
-            else if (key.StartsWith("DefaultTab"))
+            else if (property.StartsWith("DefaultTab"))
             {
                 Tabs.ForEach(tab =>
                 {
-                    switch (key.Substring(10))
+                    switch (property.Substring(10))
                     {
                         case nameof(Tab.DefaultTexture):
-                            tab.DefaultTexture = AssetLoader.LoadTexture(value);
-                            Vector2 textSize = Renderer.GetTextDimensions(tab.Text, GetFont());
-                            tab.TextXPosition = (tab.DefaultTexture.Width - (int)textSize.X) / 2;
-                            tab.TextYPosition = (tab.DefaultTexture.Height - (int)textSize.Y) / 2;
-                            if (Height != tab.DefaultTexture.Height)
-                                Height = tab.DefaultTexture.Height;
+                            if (this.TryGet(property, out Texture2D t))
+                            {
+                                tab.DefaultTexture = t;
+                                Vector2 textSize = Renderer.GetTextDimensions(tab.Text, GetFont());
+                                tab.TextXPosition = (tab.DefaultTexture.Width - (int)textSize.X) / 2;
+                                tab.TextYPosition = (tab.DefaultTexture.Height - (int)textSize.Y) / 2;
+                                if (Height != tab.DefaultTexture.Height)
+                                    Height = tab.DefaultTexture.Height;
+                            }
                             return;
                         case nameof(Tab.PressedTexture):
-                            tab.PressedTexture = AssetLoader.LoadTexture(value);
+                            if (this.TryGet(property, out t))
+                                tab.PressedTexture = t;
                             return;
                     }
                 });
             }
 
-            base.ParseAttributeFromINI(iniFile, key, value);
+            base.ParseAttributeFromUIConfigurations(property, type);
         }
 
-        public override void OnLeftClick()
+        protected override void OnLeftClick()
         {
             base.OnLeftClick();
 
@@ -239,6 +245,9 @@ namespace Rampastring.XNAUI.XNAControls
 
                 Texture2D texture = i == SelectedTab ? tab.PressedTexture : tab.DefaultTexture;
 
+                if (texture == null)
+                    texture = AssetLoader.CreateTexture(AssetLoader.GetColorFromString("#7FFF36F4"), 100, 24);
+
                 DrawTexture(texture, new Point(x, 0), RemapColor);
 
                 DrawStringWithShadow(tab.Text, GetFont(),
@@ -248,7 +257,6 @@ namespace Rampastring.XNAUI.XNAControls
                 x += tab.DefaultTexture.Width;
             }
         }
-        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 
     class Tab

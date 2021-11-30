@@ -22,8 +22,9 @@ namespace Rampastring.XNAUI
     /// Manages the game window and all of the game's controls
     /// inside the game window.
     /// </summary>
-    public class WindowManager : DrawableGameComponent
+    public sealed class WindowManager : DrawableGameComponent
     {
+
         private const int XNA_MAX_TEXTURE_SIZE = 2048;
 
         /// <summary>
@@ -297,8 +298,8 @@ namespace Rampastring.XNAUI
             {
                 throw new InvalidOperationException("WindowManager.AddAndInitializeControl: Control " + control.Name + " already exists!");
             }
-
-            control.Initialize();
+            if (!control.IsInitialized)
+                control.Initialize();
             Controls.Add(control);
         }
 
@@ -332,7 +333,7 @@ namespace Rampastring.XNAUI
 
             Controls.Insert(0, control);
         }
-                
+
         /// <summary>
         /// Centers a control on the game window.
         /// </summary>

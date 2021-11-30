@@ -1,6 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+
 using Rampastring.Tools;
+
 using System;
 
 namespace Rampastring.XNAUI.XNAControls
@@ -9,6 +11,7 @@ namespace Rampastring.XNAUI.XNAControls
     {
         public XNAPanel(WindowManager windowManager) : base(windowManager)
         {
+            VirtualProperties.Add("Padding", typeof(string));
         }
 
         public PanelBackgroundImageDrawMode PanelBackgroundDrawMode = PanelBackgroundImageDrawMode.STRETCHED;
@@ -58,50 +61,56 @@ namespace Rampastring.XNAUI.XNAControls
             //    WindowManager.Instance.RenderResolutionX, 
             //    WindowManager.Instance.RenderResolutionY);
         }
-
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
         {
-            switch (key)
+            switch (property)
             {
-                case "BorderColor":
-                    BorderColor = AssetLoader.GetColorFromString(value);
+                case nameof(BorderColor):
+                    if (this.TryGet<Color>(property, out var color))
+                        BorderColor = color;
                     return;
-                case "DrawMode":
-                    if (value == "Tiled")
-                        PanelBackgroundDrawMode = PanelBackgroundImageDrawMode.TILED;
-                    else
-                        PanelBackgroundDrawMode = PanelBackgroundImageDrawMode.STRETCHED;
+                case nameof(PanelBackgroundDrawMode):
+                    if (this.TryGet(property, out var s))
+                        PanelBackgroundDrawMode = s.Equals("Tiled", StringComparison.OrdinalIgnoreCase)
+                            ? PanelBackgroundImageDrawMode.TILED
+                            : PanelBackgroundImageDrawMode.STRETCHED;
                     return;
-                case "AlphaRate":
-                    AlphaRate = Conversions.FloatFromString(value, 0.01f);
+                case nameof(AlphaRate):
+                    if (this.TryGet(property, out float f))
+                        AlphaRate = f;
                     return;
-                case "BackgroundTexture":
-                    BackgroundTexture = AssetLoader.LoadTexture(value);
-                    return;
-                case "SolidColorBackgroundTexture":
-                    BackgroundTexture = AssetLoader.CreateTexture(AssetLoader.GetColorFromString(value), 2, 2);
-                    PanelBackgroundDrawMode = PanelBackgroundImageDrawMode.STRETCHED;
-                    return;
-                case "DrawBorders":
-                    DrawBorders = Conversions.BooleanFromString(value, true);
-                    return;
-                case "Padding":
-                    string[] parts = value.Split(',');
-                    int left = Int32.Parse(parts[0]);
-                    int top = Int32.Parse(parts[1]);
-                    int right = Int32.Parse(parts[2]);
-                    int bottom = Int32.Parse(parts[3]);
-                    ClientRectangle = new Rectangle(X - left, Y - top,
-                        Width + left + right, Height + top + bottom);
-                    foreach (XNAControl child in Children)
+                case nameof(BackgroundTexture):
+                    if (this.TryGet(property, out Texture2D t))
                     {
-                        child.ClientRectangle = new Rectangle(child.X + left,
-                            child.Y + top, child.Width, child.Height);
+                        BackgroundTexture = t;
+                        if (t.Name.Contains(":"))
+                            PanelBackgroundDrawMode = PanelBackgroundImageDrawMode.STRETCHED;
                     }
                     return;
-            }
+                case nameof(DrawBorders):
+                    if (this.TryGet(property, out bool b))
+                        DrawBorders = b;
+                    return;
+                case "Padding":
+                    if (this.TryGet(property, out s))
+                    {
+                        string[] parts = s.Split(',');
+                        int left = int.Parse(parts[0]);
+                        int top = int.Parse(parts[1]);
+                        int right = int.Parse(parts[2]);
+                        int bottom = int.Parse(parts[3]);
+                        ClientRectangle = new Rectangle(X - left, Y - top,
+                            Width + left + right, Height + top + bottom);
+                        foreach (XNAControl child in Children)
+                        {
+                            child.ClientRectangle = new Rectangle(child.X + left,
+                                child.Y + top, child.Width, child.Height);
+                        }
+                    }
 
-            base.ParseAttributeFromINI(iniFile, key, value);
+                    return;
+            }
+            base.ParseAttributeFromUIConfigurations(property, type);
         }
 
         public override void Update(GameTime gameTime)

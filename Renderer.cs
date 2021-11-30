@@ -32,8 +32,6 @@ namespace Rampastring.XNAUI
     {
         private static SpriteBatch spriteBatch;
 
-        private static Dictionary<string, FontSystem> _fonts = new Dictionary<string, FontSystem>();
-
         private static Texture2D whitePixelTexture;
 
         private static readonly LinkedList<SpriteBatchSettings> settingStack = new LinkedList<SpriteBatchSettings>();
@@ -43,38 +41,14 @@ namespace Rampastring.XNAUI
         public static void Initialize(GraphicsDevice gd, ContentManager content, string contentPath)
         {
             spriteBatch = new SpriteBatch(gd);
-            AppendFontSystem(Path.Combine(contentPath, "Fonts"));
+            AssetLoader.FontManager.Initialize(Path.Combine(contentPath, "Fonts"));
 
             whitePixelTexture = AssetLoader.CreateTexture(Color.White, 1, 1);
         }
-        private static bool _fontInit = false;
 
-        public static string DefaultFont
-        {
-            get
-            {
-                if (!_fontInit)
-                    throw new InvalidOperationException("Need Init First");
-                return _fonts.Keys.First();
-            }
-        }
+        [Obsolete]
+        public static string DefaultFont => AssetLoader.FontManager.DefaultFontName;
 
-        public static void AppendFontSystem(string fontFolderPath)
-        {
-            if (!_fontInit)
-            {
-                _fontInit = true;
-            }
-            foreach (var path in Directory.GetFiles(fontFolderPath, "*.ttf"))
-            {
-                Tools.Logger.Debug($"Loading Font from {path}");
-                var name = Path.GetFileNameWithoutExtension(path);
-                var fs = new FontSystem();
-                fs.AddFont(File.OpenRead(path));
-                fs.DefaultCharacter = '?';
-                _fonts.Add(name, fs);
-            }
-        }
         public static string GetStringWithLimitedWidth(string str, SpriteFontBase spriteFont, int maxWidth)
         {
             var sb = new StringBuilder(str);
@@ -320,7 +294,7 @@ namespace Rampastring.XNAUI
 
         private static Dictionary<(string name, int size), WeakReference<SpriteFontBase>> _fontCache
             = new Dictionary<(string, int), WeakReference<SpriteFontBase>>();
-
+        [Obsolete]
         public static SpriteFontBase GetFont(string name, int size)
         {
             if (string.IsNullOrEmpty(name))
@@ -331,9 +305,9 @@ namespace Rampastring.XNAUI
             SpriteFontBase font;
 
             if (!_fontCache.TryGetValue((name, size), out var value))
-                _fontCache.Add((name, size), new WeakReference<SpriteFontBase>(font = _fonts[name].GetFont(size)));
+                _fontCache.Add((name, size), new WeakReference<SpriteFontBase>(font = AssetLoader.FontManager[name].GetFont(size)));
             else if (!value.TryGetTarget(out font))
-                _fontCache[(name, size)].SetTarget(font = _fonts[name].GetFont(size));
+                _fontCache[(name, size)].SetTarget(font = AssetLoader.FontManager[name].GetFont(size));
 
             return font;
         }

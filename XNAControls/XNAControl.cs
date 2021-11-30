@@ -7,15 +7,29 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Microsoft.Xna.Framework.Graphics;
 using FontStashSharp;
+using System.Diagnostics;
 
 namespace Rampastring.XNAUI.XNAControls
 {
     /// <summary>
     /// The base class for a XNA-based UI control.
     /// </summary>
+    [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
     public class XNAControl : DrawableGameComponent
     {
-        const double DOUBLE_CLICK_TIME = 1.0;
+        private bool _ignoreInputOnFrame = false;
+        private bool _isChangingSize = false;
+        private bool CursorOnControl = false;
+        private bool isActive = false;
+        private const double DOUBLE_CLICK_TIME = 1.0;
+        private ControlDrawMode drawMode = ControlDrawMode.NORMAL;
+        private float alpha = 1.0f;
+        private List<XNAControl> _drawList = new List<XNAControl>();
+        private List<XNAControl> _updateList = new List<XNAControl>();
+        private readonly List<XNAControl> _childAddQueue = new List<XNAControl>();
+        private readonly List<XNAControl> _childRemoveQueue = new List<XNAControl>();
+        private readonly List<XNAControl> _children = new List<XNAControl>();
+        private XNAControl _parent;
 
         /// <summary>
         /// Creates a new control instance.
@@ -23,13 +37,24 @@ namespace Rampastring.XNAUI.XNAControls
         /// <param name="windowManager">The WindowManager associated with this control.</param>
         public XNAControl(WindowManager windowManager) : base(windowManager.Game)
         {
-            WindowManager = windowManager ?? throw new ArgumentNullException("windowManager");
+            WindowManager = windowManager;
         }
 
         /// <summary>
-        /// Gets the window manager associated with this control.
+        /// Holds a reference to the cursor.
         /// </summary>
-        public WindowManager WindowManager { get; private set; }
+        protected Cursor Cursor
+        {
+            get { return WindowManager.Cursor; }
+        }
+
+        /// <summary>
+        /// Holds a reference to the keyboard.
+        /// </summary>
+        protected RKeyboard Keyboard
+        {
+            get { return WindowManager.Keyboard; }
+        }
 
         #region Events
 
@@ -106,82 +131,6 @@ namespace Rampastring.XNAUI.XNAControls
 
         #endregion
 
-        private XNAControl parent;
-
-        /// <summary>
-        /// Gets or sets the parent of this control.
-        /// </summary>
-        public XNAControl Parent
-        {
-            get { return parent; }
-            set
-            {
-                parent = value;
-                ParentChanged?.Invoke(this, EventArgs.Empty);
-            }
-        }
-
-        public XNAControl GetRootParent()
-        {
-            if (Parent == null)
-                return null;
-
-            XNAControl rootParent = Parent;
-
-            while (rootParent.Parent != null)
-            {
-                rootParent = rootParent.Parent;
-            }
-
-            return rootParent;
-        }
-
-        /// <summary>
-        /// Set if the control is detached from its parent.
-        /// A detached control's mouse input is handled independently
-        /// from its parent, ie. it can grow beyond its parent's area
-        /// rectangle and still handle input correctly.
-        /// </summary>
-        public bool Detached { get; private set; } = false;
-
-        /// <summary>
-        /// Holds a reference to the cursor.
-        /// </summary>
-        protected Cursor Cursor
-        {
-            get { return WindowManager.Cursor; }
-        }
-
-        /// <summary>
-        /// Holds a reference to the keyboard.
-        /// </summary>
-        protected RKeyboard Keyboard
-        {
-            get { return WindowManager.Keyboard; }
-        }
-
-        /// <summary>
-        /// A list of the control's children. Don't add children to this list directly;
-        /// call the AddChild method instead.
-        /// </summary>
-        private List<XNAControl> _children = new List<XNAControl>();
-
-        private List<XNAControl> updateList = new List<XNAControl>();
-        private List<XNAControl> drawList = new List<XNAControl>();
-
-        private List<XNAControl> childAddQueue = new List<XNAControl>();
-        private List<XNAControl> childRemoveQueue = new List<XNAControl>();
-
-        /// <summary>
-        /// A read-only list of the control's children. 
-        /// Call the AddChild method to add children to the control.
-        /// </summary>
-        public ReadOnlyCollection<XNAControl> Children
-        {
-            get { return new ReadOnlyCollection<XNAControl>(_children); }
-        }
-
-
         #region Location and size
 
         private int _x, _y, _width, _height;
@@ -218,7 +167,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         protected virtual void OnSizeChanged()
         {
-            if (!IsChangingSize && Initialized && DrawMode == ControlDrawMode.UNIQUE_RENDER_TARGET)
+            if (!IsChangingSize && IsInitialized && DrawMode == ControlDrawMode.UNIQUE_RENDER_TARGET)
             {
                 RefreshRenderTarget();
             }
@@ -315,18 +264,66 @@ namespace Rampastring.XNAUI.XNAControls
 
         #endregion
 
-        #region Public members
+        #region Public Properties
+        /// <summary>
+        /// Gets the window manager associated with this control.
+        /// </summary>
+        public WindowManager WindowManager { get; private set; }
 
         /// <summary>
         /// Gets or sets the name of this control. The name is only an identifier
         /// and does not affect functionality.
         /// </summary>
         public string Name { get; set; }
+
+
+        /// <summary>
+        /// Gets or sets the parent of this control.
+        /// </summary>
+        public XNAControl Parent
+        {
+            get { return _parent; }
+            set
+            {
+                _parent = value;
+                ParentChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        public XNAControl RootParent
+        {
+            get
+            {
+                if (Parent == null)
+                    return null;
+
+                XNAControl rootParent = Parent;
+
+                while (rootParent.Parent != null)
+                {
+                    rootParent = rootParent.Parent;
+                }
+
+                return rootParent;
+            }
+        }
+
+        /// <summary>
+        /// A read-only list of the control's children. 
+        /// Call the AddChild method to add children to the control.
+        /// </summary>
+        public ReadOnlyCollection<XNAControl> Children
+        {
+            get { return new ReadOnlyCollection<XNAControl>(_children); }
+        }
+        /// <summary>
+        /// Set if the control is detached from its parent.
+        /// A detached control's mouse input is handled independently
+        /// from its parent, ie. it can grow beyond its parent's area
+        /// rectangle and still handle input correctly.
+        /// </summary>
+        public bool Detached { get; private set; } = false;
         public Color RemapColor { get; set; } = Color.White;
-
-        bool CursorOnControl = false;
-
-        float alpha = 1.0f;
         public virtual float Alpha
         {
             get
@@ -343,29 +340,22 @@ namespace Rampastring.XNAUI.XNAControls
                     alpha = value;
             }
         }
-
-        public int CursorTextureIndex;
-
+        public int CursorTextureIndex { get; set; }
         public virtual string Text { get; set; }
-
+        public virtual string Font { get; set; }
+        public virtual int FontSize { get; set; }
         public object Tag { get; set; }
-
         public bool Killed { get; set; }
-
         /// <summary>
         /// Determines whether the control should block other controls on the screen
         /// from being interacted with.
         /// </summary>
         public bool Focused { get; set; }
-
         /// <summary>
         /// Determines whether this control is able to handle input.
         /// If set to false, input management will ignore this control.
         /// </summary>
         public bool InputEnabled { get; set; } = true;
-
-        bool isActive = false;
-
         /// <summary>
         /// Gets or sets a bool that determines whether this control is the current focus of the mouse cursor.
         /// </summary>
@@ -380,9 +370,6 @@ namespace Rampastring.XNAUI.XNAControls
             }
             set { isActive = value; }
         }
-
-        bool _ignoreInputOnFrame = false;
-
         public bool IgnoreInputOnFrame
         {
             get
@@ -397,9 +384,6 @@ namespace Rampastring.XNAUI.XNAControls
                 _ignoreInputOnFrame = true;
             }
         }
-
-        private ControlDrawMode drawMode = ControlDrawMode.NORMAL;
-
         /// <summary>
         /// The draw mode of the control.
         /// Cannot be changed after the control's <see cref="Initialize"/>
@@ -410,7 +394,7 @@ namespace Rampastring.XNAUI.XNAControls
             get { return drawMode; }
             set
             {
-                if (Initialized)
+                if (IsInitialized)
                 {
                     throw new InvalidOperationException("DrawMode cannot be " +
                         "changed after a control has been initialized.");
@@ -419,9 +403,6 @@ namespace Rampastring.XNAUI.XNAControls
                 drawMode = value;
             }
         }
-
-        private bool _isChangingSize = false;
-
         /// <summary>
         /// If set to true and the control has 
         /// <see cref="DrawMode"/> == <see cref="ControlDrawMode.UNIQUE_RENDER_TARGET"/>,
@@ -437,7 +418,6 @@ namespace Rampastring.XNAUI.XNAControls
                     CheckForRenderAreaChange();
             }
         }
-
         public int Scaling
         {
             get => _scaling;
@@ -449,7 +429,7 @@ namespace Rampastring.XNAUI.XNAControls
                         "used when the control has no unique render target.");
                 }
 
-                if (Initialized && value < _initScaling)
+                if (IsInitialized && value < _initScaling)
                 {
                     throw new InvalidOperationException("Scaling cannot be " +
                         "lowered below the initial scaling multiplier after control initialization.");
@@ -463,7 +443,6 @@ namespace Rampastring.XNAUI.XNAControls
                 _scaling = value;
             }
         }
-
         /// <summary>
         /// Whether this control should allow input to pass through to controls
         /// that come after this in the control hierarchy when the control
@@ -471,6 +450,272 @@ namespace Rampastring.XNAUI.XNAControls
         /// Useful for controls that act as composite for other controls.
         /// </summary>
         public bool InputPassthrough { get; protected set; } = false;
+
+        #endregion
+
+        #region Draw helpers
+
+        private Point _drawPoint;
+
+        /// <summary>
+        /// Draws a texture relative to the control's location.
+        /// </summary>
+        /// <param name="texture">The texture.</param>
+        /// <param name="rectangle">The rectangle where to draw the texture
+        /// relative to the control.</param>
+        /// <param name="color">The remap color.</param>
+        protected void DrawTexture(Texture2D texture, Rectangle rectangle, Color color)
+        {
+            Renderer.DrawTexture(texture, new Rectangle(_drawPoint.X + rectangle.X,
+                _drawPoint.Y + rectangle.Y, rectangle.Width, rectangle.Height), color);
+        }
+
+        /// <summary>
+        /// Draws a texture relative to the control's location.
+        /// </summary>
+        /// <param name="texture">The texture.</param>
+        /// <param name="point">The point where to draw the texture
+        /// relative to the control.</param>
+        /// <param name="color">The remap color.</param>
+        protected void DrawTexture(Texture2D texture, Point point, Color color) =>
+            Renderer.DrawTexture(texture, new Rectangle(_drawPoint.X + point.X, _drawPoint.Y + point.Y, texture.Width, texture.Height), color);
+
+        /// <summary>
+        /// Draws a texture relative to the control's location
+        /// within the used render target.
+        /// </summary>
+        protected void DrawTexture(Texture2D texture, Rectangle sourceRectangle, Rectangle destinationRectangle, Color color)
+        {
+            Rectangle destRect = new Rectangle(_drawPoint.X + destinationRectangle.X,
+                _drawPoint.Y + destinationRectangle.Y,
+                destinationRectangle.Width,
+                destinationRectangle.Height);
+
+            Renderer.DrawTexture(texture, sourceRectangle, destRect, color);
+        }
+
+        /// <summary>
+        /// Draws a texture relative to the control's location.
+        /// </summary>
+        protected void DrawTexture(Texture2D texture, Vector2 location, float rotation, Vector2 origin, Vector2 scale, Color color)
+        {
+            Renderer.DrawTexture(texture,
+                new Vector2(location.X + _drawPoint.X, location.Y + _drawPoint.Y),
+                rotation, origin, scale, color);
+        }
+
+        /// <summary>
+        /// Draws a string relative to the control's location.
+        /// </summary>
+        protected void DrawString(string text, SpriteFontBase font, Vector2 location, Color color, float scale = 1)
+        {
+            Renderer.DrawString(text, font,
+                new Vector2(location.X + _drawPoint.X, location.Y + _drawPoint.Y), color, scale);
+        }
+
+        /// <summary>
+        /// Draws a string with a shadow, relative to the control's location.
+        /// </summary>
+        protected void DrawStringWithShadow(string text, SpriteFontBase font, Vector2 location, Color color, float scale = 1)
+        {
+            Renderer.DrawStringWithShadow(text, font,
+                new Vector2(location.X + _drawPoint.X, location.Y + _drawPoint.Y), color, scale);
+        }
+
+        /// <summary>
+        /// Draws a rectangle's borders relative to the control's location
+        /// with the given color and thickness.
+        /// </summary>
+        /// <param name="rect">The rectangle.</param>
+        /// <param name="color">The color.</param>
+        /// <param name="thickness">The thickness of the rectangle's borders.</param>
+        protected void DrawRectangle(Rectangle rect, Color color, int thickness = 1)
+        {
+            Renderer.DrawRectangle(new Rectangle(rect.X + _drawPoint.X,
+                rect.Y + _drawPoint.Y, rect.Width, rect.Height), color, thickness);
+        }
+
+        /// <summary>
+        /// Fills the control's drawing area with the given color.
+        /// </summary>
+        /// <param name="color">The color to fill the area with.</param>
+        protected void FillControlArea(Color color)
+        {
+            FillRectangle(new Rectangle(0, 0, Width, Height), color);
+        }
+
+        /// <summary>
+        /// Fills a rectangle relative to the control's location with the given color.
+        /// </summary>
+        /// <param name="rect">The rectangle.</param>
+        /// <param name="color">The color to fill the rectangle with.</param>
+        protected void FillRectangle(Rectangle rect, Color color)
+        {
+            Renderer.FillRectangle(new Rectangle(rect.X + _drawPoint.X,
+                rect.Y + _drawPoint.Y, rect.Width, rect.Height), color);
+        }
+
+        /// <summary>
+        /// Draws a line relative to the control's location.
+        /// </summary>
+        /// <param name="start">The start point of the line.</param>
+        /// <param name="end">The end point of the line.</param>
+        /// <param name="color">The color of the line.</param>
+        /// <param name="thickness">The thickness of the line.</param>
+        protected void DrawLine(Vector2 start, Vector2 end, Color color, int thickness = 1)
+        {
+            Renderer.DrawLine(new Vector2(start.X + _drawPoint.X, start.Y + _drawPoint.Y),
+                new Vector2(end.X + _drawPoint.X, end.Y + _drawPoint.Y), color, thickness);
+        }
+
+        #endregion
+
+        #region Event Methods
+
+        /// <summary>
+        /// Called when the mouse cursor enters the control's client rectangle.
+        /// </summary>
+        protected virtual void OnMouseEnter() => MouseEnter?.Invoke(this, EventArgs.Empty);
+
+        /// <summary>
+        /// Called when the mouse cursor leaves the control's client rectangle.
+        /// </summary>
+        protected virtual void OnMouseLeave() => MouseLeave?.Invoke(this, EventArgs.Empty);
+
+        /// <summary>
+        /// Called once when the left mouse button is pressed down while the cursor
+        /// is on the control.
+        /// </summary>
+        protected virtual void OnMouseLeftDown() => MouseLeftDown?.Invoke(this, EventArgs.Empty);
+
+        /// <summary>
+        /// Called once when the right mouse button is pressed down while the cursor
+        /// is on the control.
+        /// </summary>
+        protected virtual void OnMouseRightDown() => MouseRightDown?.Invoke(this, EventArgs.Empty);
+
+        /// <summary>
+        /// Called when the left mouse button has been 
+        /// clicked on the control's client rectangle.
+        /// </summary>
+        protected virtual void OnLeftClick()
+        {
+            WindowManager.SelectedControl = this;
+
+            LeftClick?.Invoke(this, EventArgs.Empty);
+
+            if (timeSinceLastLeftClick < TimeSpan.FromSeconds(DOUBLE_CLICK_TIME))
+            {
+                OnDoubleLeftClick();
+                return;
+            }
+
+            timeSinceLastLeftClick = TimeSpan.Zero;
+        }
+
+        /// <summary>
+        /// Called when the left mouse button has been 
+        /// clicked twice on the control's client rectangle.
+        /// </summary>
+        protected virtual void OnDoubleLeftClick() => DoubleLeftClick?.Invoke(this, EventArgs.Empty);
+
+        /// <summary>
+        /// Called when the right mouse button has been 
+        /// clicked on the control's client rectangle.
+        /// </summary>
+        protected virtual void OnRightClick() => RightClick?.Invoke(this, EventArgs.Empty);
+
+        /// <summary>
+        /// Called when the mouse moves on the control's client rectangle.
+        /// </summary>
+        protected virtual void OnMouseMove() => MouseMove?.Invoke(this, EventArgs.Empty);
+
+        /// <summary>
+        /// Called on each frame while the mouse is on the control's
+        /// client rectangle.
+        /// </summary>
+        /// <param name="eventArgs">Mouse event arguments.</param>
+        protected virtual void OnMouseOnControl() => MouseOnControl?.Invoke(this, EventArgs.Empty);
+
+        /// <summary>
+        /// Called when the scroll wheel has been scrolled on the 
+        /// control's client rectangle.
+        /// </summary>
+        protected virtual void OnMouseScrolled() => MouseScrolled?.Invoke(this, EventArgs.Empty);
+
+        /// <summary>
+        /// Called when the control's status as the selected (last-clicked)
+        /// control has been changed.
+        /// </summary>
+        public virtual void OnSelectedChanged() => SelectedChanged?.Invoke(this, EventArgs.Empty);
+        #endregion
+
+        #region Private Method
+        private void DrawInternal_UniqueRenderTarget(GameTime gameTime)
+        {
+            if (RenderTarget == null)
+                RefreshRenderTarget();
+
+            _drawPoint = Point.Zero;
+            RenderTargetStack.PushRenderTarget(RenderTarget);
+            GraphicsDevice.Clear(Color.Transparent);
+            Draw(gameTime);
+            RenderTargetStack.PopRenderTarget();
+            Rectangle rect = RenderRectangle();
+            if (Scaling > 1 && Renderer.CurrentSettings.SamplerState != SamplerState.PointClamp)
+            {
+                Renderer.PushSettings(new SpriteBatchSettings(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp));
+                DrawUniqueRenderTarget(rect);
+                Renderer.PopSettings();
+            }
+            else
+            {
+                DrawUniqueRenderTarget(rect);
+            }
+        }
+
+        /// <summary>
+        /// Draws the control when it is detached from its parent.
+        /// </summary>
+        private void DrawInternal_Detached(GameTime gameTime)
+        {
+            int totalScaling = GetTotalScalingRecursive();
+            if (totalScaling > 1)
+            {
+                // We have to use an unique render target for scaling
+                RenderTargetStack.PushRenderTarget(RenderTargetStack.DetachedScaledControlRenderTarget);
+                Draw(gameTime);
+                RenderTargetStack.PopRenderTarget();
+                Rectangle renderRectangle = RenderRectangle();
+                if (Renderer.CurrentSettings.SamplerState != SamplerState.PointClamp)
+                {
+                    Renderer.PushSettings(new SpriteBatchSettings(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp));
+                    DrawDetachedScaledTexture(renderRectangle, totalScaling);
+                    Renderer.PopSettings();
+                }
+                else
+                {
+                    DrawDetachedScaledTexture(renderRectangle, totalScaling);
+                }
+
+                return;
+            }
+
+            Draw(gameTime);
+        }
+
+        private void DrawUniqueRenderTarget(Rectangle renderRectangle)
+        {
+            Renderer.DrawTexture(RenderTarget, new Rectangle(0, 0, Width, Height),
+                new Rectangle(renderRectangle.X, renderRectangle.Y, ScaledWidth, ScaledHeight), Color.White * Alpha);
+        }
+
+        private void DrawDetachedScaledTexture(Rectangle renderRectangle, int totalScaling)
+        {
+            Renderer.DrawTexture(RenderTargetStack.DetachedScaledControlRenderTarget,
+            renderRectangle,
+            new Rectangle(renderRectangle.X, renderRectangle.Y, Width * totalScaling, Height * totalScaling), Color.White * Alpha);
+        }
 
         #endregion
 
@@ -496,7 +741,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// Determines whether the control's <see cref="Initialize"/> method
         /// has been called yet.
         /// </summary>
-        protected bool Initialized { get; private set; } = false;
+        public bool IsInitialized { get; private set; } = false;
 
         /// <summary>
         /// Checks if the last parent of this control is active.
@@ -545,7 +790,7 @@ namespace Rampastring.XNAUI.XNAControls
 #if XNA
                 return SumPoints(p, parent.GetWindowPoint());
 #else
-                return p + parent.GetWindowPoint();
+                return p + _parent.GetWindowPoint();
 #endif
             }
 
@@ -558,7 +803,7 @@ namespace Rampastring.XNAUI.XNAControls
         private Point SumPoints(Point p1, Point p2)
         {
             return new Point(p1.X + p2.X, p1.Y + p2.Y);
-        }
+        } 
 #endif
 
         public Point GetSizePoint()
@@ -711,7 +956,7 @@ namespace Rampastring.XNAUI.XNAControls
                 throw new ArgumentNullException("child");
 
             if (isIteratingChildren)
-                childAddQueue.Add(child);
+                _childAddQueue.Add(child);
             else
                 AddChildImmediate(child);
         }
@@ -743,7 +988,9 @@ namespace Rampastring.XNAUI.XNAControls
         private void AddChildImmediate(XNAControl child)
         {
             InitChild(child);
-            child.Initialize();
+            //Debug.Assert(!child.IsInitialized);
+            if (!child.IsInitialized)
+                child.Initialize();
             _children.Add(child);
             ReorderControls();
         }
@@ -784,12 +1031,12 @@ namespace Rampastring.XNAUI.XNAControls
 
         private void Child_DrawOrderChanged(object sender, EventArgs e)
         {
-            drawList = _children.OrderBy(c => c.DrawOrder).ToList();
+            _drawList = _children.OrderBy(c => c.DrawOrder).ToList();
         }
 
         private void Child_UpdateOrderChanged(object sender, EventArgs e)
         {
-            updateList = _children.OrderBy(c => c.UpdateOrder).Reverse().ToList();
+            _updateList = _children.OrderBy(c => c.UpdateOrder).Reverse().ToList();
         }
 
         /// <summary>
@@ -799,7 +1046,7 @@ namespace Rampastring.XNAUI.XNAControls
         public void RemoveChild(XNAControl child)
         {
             if (isIteratingChildren)
-                childRemoveQueue.Add(child);
+                _childRemoveQueue.Add(child);
             else
                 RemoveChildImmediate(child);
         }
@@ -825,22 +1072,47 @@ namespace Rampastring.XNAUI.XNAControls
             // (on top of the other controls).
             // It's weird for the updateorder and draworder to behave differently,
             // but at this point we don't have a choice because of backwards compatibility.
-            updateList = _children.OrderBy(c => c.UpdateOrder).Reverse().ToList();
-            drawList = _children.OrderBy(c => c.DrawOrder).ToList();
+            _updateList = _children.OrderBy(c => c.UpdateOrder).Reverse().ToList();
+            _drawList = _children.OrderBy(c => c.DrawOrder).ToList();
         }
 
         #endregion
+
+#if DEBUG
+        private StackTrace _initStackTrace;
+#endif
 
         /// <summary>
         /// Initializes the control.
         /// </summary>
         public override void Initialize()
         {
+            //            if (IsInitialized)
+            //                throw new InvalidOperationException("重复初始化"
+            //#if DEBUG
+            //                            + ", 首次初始化" + _initStackTrace
+            //#endif
+            //                    );
+
             base.Initialize();
 
-            Initialized = true;
+            foreach (var child in Children)
+            {
+                //Debug.Assert(!child.IsInitialized);
+                if (!child.IsInitialized)
+                    child.Initialize();
+            }
+
+            Initialized?.Invoke(this, EventArgs.Empty);
+
+            IsInitialized = true;
             _initScaling = _scaling;
+#if DEBUG
+            _initStackTrace = new StackTrace();
+#endif
         }
+
+        public event EventHandler Initialized;
 
         protected override void OnVisibleChanged(object sender, EventArgs args)
         {
@@ -893,7 +1165,7 @@ namespace Rampastring.XNAUI.XNAControls
         protected virtual int GetRenderTargetWidth() => Width <= 0 ? 2 : Width;
 
         protected virtual int GetRenderTargetHeight() => Height <= 0 ? 2 : Height;
-
+        [Obsolete]
         public virtual void GetAttributes(IniFile iniFile)
         {
             IsChangingSize = true;
@@ -909,9 +1181,37 @@ namespace Rampastring.XNAUI.XNAControls
                     ParseAttributeFromINI(iniFile, key, iniFile.GetStringValue(Name, key, String.Empty));
             }
 
+            GetAttributes();
             IsChangingSize = false;
         }
 
+        public virtual void GetAttributes()
+        {
+            var properties = GetType().GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public).Where(i => i.CanWrite).ToArray();
+            foreach (var property in properties)
+                ParseAttributeFromUIConfigurations(property.Name, property.PropertyType);
+
+            foreach (var property in VirtualProperties)
+                ParseAttributeFromUIConfigurations(property.Key, property.Value);
+
+            if (Children.Any())
+            {
+                foreach (var child in Children)
+                {
+                    child.GetAttributes();
+                }
+            }
+
+            if (!string.IsNullOrEmpty(Name))
+                ParseLocaleStringsFromStringManager();
+        }
+
+        protected Dictionary<string, Type> VirtualProperties { get; } = new Dictionary<string, Type>
+        {
+            { "Location", typeof(Point) },
+            { "Size", typeof(Point) }
+        };
+        [Obsolete]
         public virtual void ParseAttributeFromINI(IniFile iniFile, string key, string value)
         {
             switch (key)
@@ -1078,7 +1378,7 @@ namespace Rampastring.XNAUI.XNAControls
 
                 isIteratingChildren = true;
 
-                var activeChildEnumerator = updateList.GetEnumerator();
+                var activeChildEnumerator = _updateList.GetEnumerator();
 
                 while (activeChildEnumerator.MoveNext())
                 {
@@ -1154,7 +1454,7 @@ namespace Rampastring.XNAUI.XNAControls
 
             isIteratingChildren = true;
 
-            var enumerator = updateList.GetEnumerator();
+            var enumerator = _updateList.GetEnumerator();
 
             while (enumerator.MoveNext())
             {
@@ -1171,15 +1471,15 @@ namespace Rampastring.XNAUI.XNAControls
 
             isIteratingChildren = false;
 
-            foreach (var child in childAddQueue)
+            foreach (var child in _childAddQueue)
                 AddChildImmediate(child);
 
-            childAddQueue.Clear();
+            _childAddQueue.Clear();
 
-            foreach (var child in childRemoveQueue)
+            foreach (var child in _childRemoveQueue)
                 RemoveChildImmediate(child);
 
-            childRemoveQueue.Clear();
+            _childRemoveQueue.Clear();
 
             ChildHandledInput = activeChild != null;
         }
@@ -1199,7 +1499,7 @@ namespace Rampastring.XNAUI.XNAControls
             }
             else
             {
-                drawPoint = GetRenderPoint();
+                _drawPoint = GetRenderPoint();
 
                 if (Detached)
                 {
@@ -1212,71 +1512,6 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-        private void DrawInternal_UniqueRenderTarget(GameTime gameTime)
-        {
-            if (RenderTarget == null)
-                RefreshRenderTarget();
-
-            drawPoint = Point.Zero;
-            RenderTargetStack.PushRenderTarget(RenderTarget);
-            GraphicsDevice.Clear(Color.Transparent);
-            Draw(gameTime);
-            RenderTargetStack.PopRenderTarget();
-            Rectangle rect = RenderRectangle();
-            if (Scaling > 1 && Renderer.CurrentSettings.SamplerState != SamplerState.PointClamp)
-            {
-                Renderer.PushSettings(new SpriteBatchSettings(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp));
-                DrawUniqueRenderTarget(rect);
-                Renderer.PopSettings();
-            }
-            else
-            {
-                DrawUniqueRenderTarget(rect);
-            }
-        }
-
-        /// <summary>
-        /// Draws the control when it is detached from its parent.
-        /// </summary>
-        private void DrawInternal_Detached(GameTime gameTime)
-        {
-            int totalScaling = GetTotalScalingRecursive();
-            if (totalScaling > 1)
-            {
-                // We have to use an unique render target for scaling
-                RenderTargetStack.PushRenderTarget(RenderTargetStack.DetachedScaledControlRenderTarget);
-                Draw(gameTime);
-                RenderTargetStack.PopRenderTarget();
-                Rectangle renderRectangle = RenderRectangle();
-                if (Renderer.CurrentSettings.SamplerState != SamplerState.PointClamp)
-                {
-                    Renderer.PushSettings(new SpriteBatchSettings(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp));
-                    DrawDetachedScaledTexture(renderRectangle, totalScaling);
-                    Renderer.PopSettings();
-                }
-                else
-                {
-                    DrawDetachedScaledTexture(renderRectangle, totalScaling);
-                }
-
-                return;
-            }
-
-            Draw(gameTime);
-        }
-
-        private void DrawUniqueRenderTarget(Rectangle renderRectangle)
-        {
-            Renderer.DrawTexture(RenderTarget, new Rectangle(0, 0, Width, Height),
-                new Rectangle(renderRectangle.X, renderRectangle.Y, ScaledWidth, ScaledHeight), Color.White * Alpha);
-        }
-
-        private void DrawDetachedScaledTexture(Rectangle renderRectangle, int totalScaling)
-        {
-            Renderer.DrawTexture(RenderTargetStack.DetachedScaledControlRenderTarget,
-            renderRectangle,
-            new Rectangle(renderRectangle.X, renderRectangle.Y, Width * totalScaling, Height * totalScaling), Color.White * Alpha);
-        }
 
         /// <summary>
         /// Draws the control and its child controls.
@@ -1292,7 +1527,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         protected void DrawChildren(GameTime gameTime)
         {
-            var enumerator = drawList.GetEnumerator();
+            var enumerator = _drawList.GetEnumerator();
 
             while (enumerator.MoveNext())
             {
@@ -1303,228 +1538,102 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-        #region Draw helpers
-
-        private Point drawPoint;
-
-        /// <summary>
-        /// Draws a texture relative to the control's location.
-        /// </summary>
-        /// <param name="texture">The texture.</param>
-        /// <param name="rectangle">The rectangle where to draw the texture
-        /// relative to the control.</param>
-        /// <param name="color">The remap color.</param>
-        public void DrawTexture(Texture2D texture, Rectangle rectangle, Color color)
+        protected virtual void ParseAttributeFromUIConfigurations(string property, Type type)
         {
-            Renderer.DrawTexture(texture, new Rectangle(drawPoint.X + rectangle.X,
-                drawPoint.Y + rectangle.Y, rectangle.Width, rectangle.Height), color);
-        }
-
-        /// <summary>
-        /// Draws a texture relative to the control's location.
-        /// </summary>
-        /// <param name="texture">The texture.</param>
-        /// <param name="point">The point where to draw the texture
-        /// relative to the control.</param>
-        /// <param name="color">The remap color.</param>
-        public void DrawTexture(Texture2D texture, Point point, Color color) =>
-            Renderer.DrawTexture(texture, new Rectangle(drawPoint.X + point.X, drawPoint.Y + point.Y, texture.Width, texture.Height), color);
-
-        /// <summary>
-        /// Draws a texture relative to the control's location
-        /// within the used render target.
-        /// </summary>
-        public void DrawTexture(Texture2D texture, Rectangle sourceRectangle, Rectangle destinationRectangle, Color color)
-        {
-            Rectangle destRect = new Rectangle(drawPoint.X + destinationRectangle.X,
-                drawPoint.Y + destinationRectangle.Y,
-                destinationRectangle.Width,
-                destinationRectangle.Height);
-
-            Renderer.DrawTexture(texture, sourceRectangle, destRect, color);
-        }
-
-        /// <summary>
-        /// Draws a texture relative to the control's location.
-        /// </summary>
-        public void DrawTexture(Texture2D texture, Vector2 location, float rotation, Vector2 origin, Vector2 scale, Color color)
-        {
-            Renderer.DrawTexture(texture,
-                new Vector2(location.X + drawPoint.X, location.Y + drawPoint.Y),
-                rotation, origin, scale, color);
-        }
-
-        /// <summary>
-        /// Draws a string relative to the control's location.
-        /// </summary>
-        public void DrawString(string text, SpriteFontBase font, Vector2 location, Color color, float scale = 1)
-        {
-            Renderer.DrawString(text, font,
-                new Vector2(location.X + drawPoint.X, location.Y + drawPoint.Y), color, scale);
-        }
-
-        /// <summary>
-        /// Draws a string with a shadow, relative to the control's location.
-        /// </summary>
-        public void DrawStringWithShadow(string text, SpriteFontBase font, Vector2 location, Color color, float scale = 1)
-        {
-            Renderer.DrawStringWithShadow(text, font,
-                new Vector2(location.X + drawPoint.X, location.Y + drawPoint.Y), color, scale);
-        }
-
-        /// <summary>
-        /// Draws a rectangle's borders relative to the control's location
-        /// with the given color and thickness.
-        /// </summary>
-        /// <param name="rect">The rectangle.</param>
-        /// <param name="color">The color.</param>
-        /// <param name="thickness">The thickness of the rectangle's borders.</param>
-        public void DrawRectangle(Rectangle rect, Color color, int thickness = 1)
-        {
-            Renderer.DrawRectangle(new Rectangle(rect.X + drawPoint.X,
-                rect.Y + drawPoint.Y, rect.Width, rect.Height), color, thickness);
-        }
-
-        /// <summary>
-        /// Fills the control's drawing area with the given color.
-        /// </summary>
-        /// <param name="color">The color to fill the area with.</param>
-        public void FillControlArea(Color color)
-        {
-            FillRectangle(new Rectangle(0, 0, Width, Height), color);
-        }
-
-        /// <summary>
-        /// Fills a rectangle relative to the control's location with the given color.
-        /// </summary>
-        /// <param name="rect">The rectangle.</param>
-        /// <param name="color">The color to fill the rectangle with.</param>
-        public void FillRectangle(Rectangle rect, Color color)
-        {
-            Renderer.FillRectangle(new Rectangle(rect.X + drawPoint.X,
-                rect.Y + drawPoint.Y, rect.Width, rect.Height), color);
-        }
-
-        /// <summary>
-        /// Draws a line relative to the control's location.
-        /// </summary>
-        /// <param name="start">The start point of the line.</param>
-        /// <param name="end">The end point of the line.</param>
-        /// <param name="color">The color of the line.</param>
-        /// <param name="thickness">The thickness of the line.</param>
-        public void DrawLine(Vector2 start, Vector2 end, Color color, int thickness = 1)
-        {
-            Renderer.DrawLine(new Vector2(start.X + drawPoint.X, start.Y + drawPoint.Y),
-                new Vector2(end.X + drawPoint.X, end.Y + drawPoint.Y), color, thickness);
-        }
-
-        #endregion
-
-        /// <summary>
-        /// Called when the mouse cursor enters the control's client rectangle.
-        /// </summary>
-        public virtual void OnMouseEnter()
-        {
-            MouseEnter?.Invoke(this, EventArgs.Empty);
-        }
-
-        /// <summary>
-        /// Called when the mouse cursor leaves the control's client rectangle.
-        /// </summary>
-        public virtual void OnMouseLeave()
-        {
-            MouseLeave?.Invoke(this, EventArgs.Empty);
-        }
-
-        /// <summary>
-        /// Called once when the left mouse button is pressed down while the cursor
-        /// is on the control.
-        /// </summary>
-        public virtual void OnMouseLeftDown()
-        {
-            MouseLeftDown?.Invoke(this, EventArgs.Empty);
-        }
-
-        /// <summary>
-        /// Called once when the right mouse button is pressed down while the cursor
-        /// is on the control.
-        /// </summary>
-        public virtual void OnMouseRightDown()
-        {
-            MouseRightDown?.Invoke(this, EventArgs.Empty);
-        }
-
-        /// <summary>
-        /// Called when the left mouse button has been 
-        /// clicked on the control's client rectangle.
-        /// </summary>
-        public virtual void OnLeftClick()
-        {
-            WindowManager.SelectedControl = this;
-
-            LeftClick?.Invoke(this, EventArgs.Empty);
-
-            if (timeSinceLastLeftClick < TimeSpan.FromSeconds(DOUBLE_CLICK_TIME))
+            switch (property)
             {
-                OnDoubleLeftClick();
-                return;
+                case nameof(Visible):
+                    if (this.TryGet(property, out bool b))
+                    {
+                        Visible = b;
+                        Enabled = b;
+                    }
+                    return;
+                case nameof(DrawOrder):
+                    if (this.TryGet(property, out int i))
+                        DrawOrder = i;
+                    return;
+                case nameof(Enabled):
+                    if (this.TryGet(property, out b))
+                        Enabled = b;
+                    return;
+                case nameof(UpdateOrder):
+                    if (this.TryGet(property, out i))
+                        UpdateOrder = i;
+                    return;
+                case nameof(FontSize):
+                    if (this.TryGet(property, out i))
+                        FontSize = i;
+                    return;
+                case nameof(X):
+                    if (this.TryGet(property, out i))
+                        X = i;
+                    return;
+                case nameof(Y):
+                    if (this.TryGet(property, out i))
+                        Y = i;
+                    return;
+                case nameof(Width):
+                    if (this.TryGet(property, out i))
+                        Width = i;
+                    return;
+                case nameof(Height):
+                    if (this.TryGet(property, out i))
+                        Height = i;
+                    return;
+                case "Location":
+                    if (this.TryGet(property, out Point point))
+                    {
+                        X = point.X;
+                        Y = point.Y;
+                    }
+                    return;
+                case "Size":
+                    if (this.TryGet(property, out point))
+                    {
+                        Width = point.X;
+                        Height = point.Y;
+                    }
+                    return;
+            }
+        }
+
+        protected virtual void ParseLocaleStringsFromStringManager()
+        {
+            var tmp = this.GetUIString(nameof(Text));
+            if (!tmp.StartsWith("UI."))
+            {
+                Logger.Debug($"Use Text \"{tmp}\"");
+                Text = tmp;
             }
 
-            timeSinceLastLeftClick = TimeSpan.Zero;
+            tmp = this.GetUIStringEx(nameof(Font));
+            if (!tmp.StartsWith("UI."))
+            {
+                Logger.Debug($"Use Font \"{tmp}\"");
+                Font = tmp;
+            }
+
+            tmp = this.GetUIStringEx(nameof(FontSize));
+            if (!tmp.StartsWith("UI.") && int.TryParse(tmp, out var i))
+            {
+                Logger.Debug($"Use FontSize \"{i}\"");
+                FontSize = i;
+            }
+
+        }
+        private (string info, SpriteFontBase font) _fontCache = (string.Empty, null);
+        public virtual SpriteFontBase GetFont()
+        {
+            var key = $"{Font}:{FontSize}";
+            if (key != _fontCache.info)
+                _fontCache = (key, GetFont(Font, FontSize));
+
+            return _fontCache.font;
         }
 
-        /// <summary>
-        /// Called when the left mouse button has been 
-        /// clicked twice on the control's client rectangle.
-        /// </summary>
-        public virtual void OnDoubleLeftClick()
-        {
-            DoubleLeftClick?.Invoke(this, EventArgs.Empty);
-        }
+        public static SpriteFontBase GetFont(string font, int size) => AssetLoader.FontManager[font].GetFont(size);
 
-        /// <summary>
-        /// Called when the right mouse button has been 
-        /// clicked on the control's client rectangle.
-        /// </summary>
-        public virtual void OnRightClick()
-        {
-            RightClick?.Invoke(this, EventArgs.Empty);
-        }
-
-        /// <summary>
-        /// Called when the mouse moves on the control's client rectangle.
-        /// </summary>
-        public virtual void OnMouseMove()
-        {
-            MouseMove?.Invoke(this, EventArgs.Empty);
-        }
-
-        /// <summary>
-        /// Called on each frame while the mouse is on the control's
-        /// client rectangle.
-        /// </summary>
-        /// <param name="eventArgs">Mouse event arguments.</param>
-        public virtual void OnMouseOnControl()
-        {
-            MouseOnControl?.Invoke(this, EventArgs.Empty);
-        }
-
-        /// <summary>
-        /// Called when the scroll wheel has been scrolled on the 
-        /// control's client rectangle.
-        /// </summary>
-        public virtual void OnMouseScrolled()
-        {
-            MouseScrolled?.Invoke(this, EventArgs.Empty);
-        }
-
-        /// <summary>
-        /// Called when the control's status as the selected (last-clicked)
-        /// control has been changed.
-        /// </summary>
-        public virtual void OnSelectedChanged()
-        {
-            SelectedChanged?.Invoke(this, EventArgs.Empty);
-        }
+        private string GetDebuggerDisplay() => $"{Name} : {GetType().Name}";
     }
 }

@@ -99,8 +99,6 @@ namespace Rampastring.XNAUI.XNAControls
         }
 
 
-        public string Font { get; set; }
-        public int FontSize { get; set; }
 
         /// <summary>
         /// If set to false, only the first line will be displayed from items
@@ -747,7 +745,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// <summary>
         /// Handles input from a scroll wheel.
         /// </summary>
-        public override void OnMouseScrolled()
+        protected override void OnMouseScrolled()
         {
             if (GetTotalLineCount() <= NumberOfLinesOnList)
             {
@@ -775,7 +773,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// <summary>
         /// Updates the hovered item index while the cursor is on this control.
         /// </summary>
-        public override void OnMouseOnControl()
+        protected override void OnMouseOnControl()
         {
             base.OnMouseOnControl();
 
@@ -786,7 +784,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// <summary>
         /// Clears the selection on right-click.
         /// </summary>
-        public override void OnRightClick()
+        protected override void OnRightClick()
         {
             if (AllowRightClickUnselect)
                 SelectedIndex = -1;
@@ -797,7 +795,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// <summary>
         /// Selects an item when the user left-clicks on this control.
         /// </summary>
-        public override void OnMouseLeftDown()
+        protected override void OnMouseLeftDown()
         {
             int itemIndex = GetItemIndexOnCursor(GetCursorPoint());
 
@@ -815,7 +813,7 @@ namespace Rampastring.XNAUI.XNAControls
             base.OnMouseLeftDown();
         }
 
-        public override void OnDoubleLeftClick()
+        protected override void OnDoubleLeftClick()
         {
             // We don't want to send a "double left click" message if the user
             // is just quickly changing the selected index
@@ -826,7 +824,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// <summary>
         /// Updates the hovered index when the mouse cursor leaves this control's client rectangle.
         /// </summary>
-        public override void OnMouseLeave()
+        protected override void OnMouseLeave()
         {
             base.OnMouseLeave();
 
@@ -979,6 +977,5 @@ namespace Rampastring.XNAUI.XNAControls
 
             DrawChildren(gameTime);
         }
-        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
     }
 }

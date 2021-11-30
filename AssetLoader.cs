@@ -9,6 +9,11 @@ using Color = Microsoft.Xna.Framework.Color;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Media;
 using System.Linq;
+using System.Drawing.Text;
+using System.Text;
+using System.Globalization;
+using FontStashSharp;
+using Rampastring.XNAUI.Data;
 
 namespace Rampastring.XNAUI
 {
@@ -26,10 +31,12 @@ namespace Rampastring.XNAUI
         private static GraphicsDevice graphicsDevice;
         private static ContentManager contentManager;
 
-        private static List<WeakReference<Texture2D>> textureCache;
-        private static List<WeakReference<SoundEffect>> soundCache;
+        private static List<Texture2D> textureCache;
+        private static List<SoundEffect> soundCache;
 
         private static bool _initialized = false;
+
+        public static FontManager FontManager { get; } = new FontManager();
 
         public static bool IsInitialized => _initialized;
 
@@ -46,9 +53,11 @@ namespace Rampastring.XNAUI
 
             graphicsDevice = gd;
             AssetSearchPaths = new List<string>();
-            textureCache = new List<WeakReference<Texture2D>>();
-            soundCache = new List<WeakReference<SoundEffect>>();
+            textureCache = new List<Texture2D>();
+            soundCache = new List<SoundEffect>();
             contentManager = content;
+
+            FontManager.DefaultFontName = StringManager.GetString("UI.XNAControl.Font");
         }
 
         /// <summary>
@@ -62,7 +71,7 @@ namespace Rampastring.XNAUI
             Logger.Debug($"Try Load \"{name}\"");
             Texture2D texture = null;
 
-            if (textureCache.Any(x => x.TryGetTarget(out texture) && texture.Name == name))
+            if ((texture = textureCache.FirstOrDefault(x => x.Name == name)) != null)
             {
                 Logger.Debug($"Find \"{name}\" from cache");
                 return texture;
@@ -83,7 +92,7 @@ namespace Rampastring.XNAUI
             var texture = LoadTextureInternal(name);
             if (texture != null)
             {
-                textureCache.Add(new WeakReference<Texture2D>(texture));
+                textureCache.Add(texture);
                 return texture;
             }
 
@@ -188,7 +197,7 @@ namespace Rampastring.XNAUI
 
             Texture2D texture = null;
 
-            if (textureCache.Any(x => x.TryGetTarget(out texture) && texture.Name == key))
+            if ((texture = textureCache.FirstOrDefault(x => x.Name == key)) != null)
             {
                 Logger.Debug($"Find \"{key}\" from cache");
                 return texture;
@@ -205,7 +214,7 @@ namespace Rampastring.XNAUI
 
             texture.SetData(colorArray);
 
-            textureCache.Add(new WeakReference<Texture2D>(texture));
+            textureCache.Add(texture);
             return texture;
         }
 
@@ -245,7 +254,7 @@ namespace Rampastring.XNAUI
             Logger.Debug($"Try Load \"{name}\"");
             SoundEffect cachedSound = null;
 
-            if (soundCache.Any(x => x.TryGetTarget(out cachedSound) && cachedSound.Name == name))
+            if ((cachedSound = soundCache.FirstOrDefault(x => x.Name == name)) != null)
             {
                 Logger.Debug($"Find \"{name}\" from cache");
                 return cachedSound;
@@ -259,7 +268,7 @@ namespace Rampastring.XNAUI
                     {
                         SoundEffect se = SoundEffect.FromStream(fs);
                         se.Name = name;
-                        soundCache.Add(new WeakReference<SoundEffect>(se));
+                        soundCache.Add(se);
                         return se;
                     }
                 }
@@ -346,5 +355,6 @@ namespace Rampastring.XNAUI
         /// <returns>A XNA Color struct.</returns>
         [Obsolete("Use GetColorFromString", true)]
         public static Color GetRGBAColorFromString(string colorString) => throw new NotSupportedException();
+
     }
 }
