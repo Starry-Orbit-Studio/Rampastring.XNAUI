@@ -8,6 +8,7 @@ using System;
 using System.Text;
 using System.Text.RegularExpressions;
 using FontStashSharp;
+using SharpDX.Direct3D9;
 
 #if !XNA
 using TextInputEventArgs = Microsoft.Xna.Framework.TextInputEventArgs;
@@ -128,43 +129,34 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         public int MaximumTextLength { get; set; } = int.MaxValue;
 
-        /// <summary>
-        /// The text on the text box.
-        /// </summary>
-        public override string Text
+        protected override void OnTextChange(string v)
         {
-            get
+            if (v is null)
+                throw new InvalidOperationException("XNATextBox text cannot be set to null.");
+
+            InputPosition = 0;
+            TextStartPosition = 0;
+
+            if (_text.Length > MaximumTextLength)
+                _text = _text.Substring(0, MaximumTextLength);
+
+            TextEndPosition = _text.Length;
+
+            while (!TextFitsBox())
             {
-                return text;
-            }
+                TextEndPosition--;
 
-            set
-            {
-                text = value ?? throw new InvalidOperationException("XNATextBox text cannot be set to null.");
-                InputPosition = 0;
-                TextStartPosition = 0;
-
-                if (text.Length > MaximumTextLength)
-                    text = text.Substring(0, MaximumTextLength);
-
-                TextEndPosition = text.Length;
-
-                while (!TextFitsBox())
+                if (TextEndPosition < TextStartPosition)
                 {
-                    TextEndPosition--;
-
-                    if (TextEndPosition < TextStartPosition)
-                    {
-                        TextEndPosition = TextStartPosition;
-                        break;
-                    }
+                    TextEndPosition = TextStartPosition;
+                    break;
                 }
-
-                TextChanged?.Invoke(this, EventArgs.Empty);
             }
+
+            TextChanged?.Invoke(this, EventArgs.Empty);
+            base.OnTextChange(_text);
         }
 
-        private string text = string.Empty;
         private string savedText = string.Empty;
 
         /// <summary>
@@ -269,7 +261,7 @@ namespace Rampastring.XNAUI.XNAControls
                 case '\x001b':  // ESC
                     return;
                 default:
-                    if (text.Length == MaximumTextLength)
+                    if (_text.Length == MaximumTextLength)
                         break;
 
                     // Don't allow typing characters that don't exist in the spritefont
@@ -279,10 +271,10 @@ namespace Rampastring.XNAUI.XNAControls
                     if (!AllowCharacterInput(character))
                         break;
 
-                    text = text.Insert(InputPosition, character.ToString());
+                    _text = _text.Insert(InputPosition, character.ToString());
                     InputPosition++;
 
-                    if (TextEndPosition == text.Length - 1 ||
+                    if (TextEndPosition == _text.Length - 1 ||
                         InputPosition > TextEndPosition)
                     {
                         TextEndPosition++;
@@ -331,7 +323,7 @@ namespace Rampastring.XNAUI.XNAControls
             switch (key)
             {
                 case Keys.Home:
-                    if (text.Length != 0)
+                    if (_text.Length != 0)
                     {
                         TextStartPosition = 0;
                         TextEndPosition = 0;
@@ -339,7 +331,7 @@ namespace Rampastring.XNAUI.XNAControls
 
                         while (true)
                         {
-                            if (TextEndPosition < text.Length)
+                            if (TextEndPosition < _text.Length)
                             {
                                 TextEndPosition++;
 
@@ -358,8 +350,8 @@ namespace Rampastring.XNAUI.XNAControls
 
                     return true;
                 case Keys.End:
-                    TextEndPosition = text.Length;
-                    InputPosition = text.Length;
+                    TextEndPosition = _text.Length;
+                    InputPosition = _text.Length;
                     TextStartPosition = 0;
 
                     while (true)
@@ -378,9 +370,9 @@ namespace Rampastring.XNAUI.XNAControls
                     if (!Keyboard.IsCtrlHeldDown())
                         break;
 
-                    if (!string.IsNullOrEmpty(text))
+                    if (!string.IsNullOrEmpty(_text))
                     {
-                        System.Windows.Forms.Clipboard.SetText(text);
+                        System.Windows.Forms.Clipboard.SetText(_text);
                         Text = string.Empty;
                         InputReceived?.Invoke(this, EventArgs.Empty);
                     }
@@ -401,8 +393,8 @@ namespace Rampastring.XNAUI.XNAControls
                     if (!Keyboard.IsCtrlHeldDown())
                         break;
 
-                    if (!string.IsNullOrEmpty(text))
-                        System.Windows.Forms.Clipboard.SetText(text);
+                    if (!string.IsNullOrEmpty(_text))
+                        System.Windows.Forms.Clipboard.SetText(_text);
 
                     return true;
                 case Keys.Enter:
@@ -432,11 +424,11 @@ namespace Rampastring.XNAUI.XNAControls
 
         private bool TextFitsBox()
         {
-            if (String.IsNullOrEmpty(text))
+            if (String.IsNullOrEmpty(_text))
                 return true;
 
             return Renderer.GetTextDimensions(
-                        text.Substring(TextStartPosition, TextEndPosition - TextStartPosition),
+                        _text.Substring(TextStartPosition, TextEndPosition - TextStartPosition),
                          GetFont()).X < Width - TEXT_HORIZONTAL_MARGIN * 2;
         }
 
@@ -452,7 +444,7 @@ namespace Rampastring.XNAUI.XNAControls
                 for (int i = TextStartPosition; i < TextEndPosition - TextStartPosition; i++)
                 {
                     text.Append(Text[i]);
-                    if (Renderer.GetTextDimensions(text.ToString(), GetFont()).X +
+                    if (Renderer.GetTextDimensions(_text.ToString(), GetFont()).X +
                         TEXT_HORIZONTAL_MARGIN > x)
                     {
                         inputPosition = i - 1;
@@ -517,7 +509,7 @@ namespace Rampastring.XNAUI.XNAControls
 
         private void ScrollRight()
         {
-            if (InputPosition >= text.Length)
+            if (InputPosition >= _text.Length)
                 return;
 
             InputPosition++;
@@ -535,16 +527,16 @@ namespace Rampastring.XNAUI.XNAControls
 
         private void DeleteCharacter()
         {
-            if (text.Length > InputPosition)
+            if (_text.Length > InputPosition)
             {
-                text = text.Remove(InputPosition, 1);
+                _text = _text.Remove(InputPosition, 1);
 
                 if (TextStartPosition > 0)
                 {
                     TextStartPosition--;
                 }
 
-                if (TextEndPosition > text.Length || !TextFitsBox())
+                if (TextEndPosition > _text.Length || !TextFitsBox())
                     TextEndPosition--;
 
                 TextChanged?.Invoke(this, EventArgs.Empty);
@@ -555,9 +547,9 @@ namespace Rampastring.XNAUI.XNAControls
 
         private void Backspace()
         {
-            if (text.Length > 0 && InputPosition > 0)
+            if (_text.Length > 0 && InputPosition > 0)
             {
-                text = text.Remove(InputPosition - 1, 1);
+                _text = _text.Remove(InputPosition - 1, 1);
                 InputPosition--;
 
                 if (TextStartPosition > 0)

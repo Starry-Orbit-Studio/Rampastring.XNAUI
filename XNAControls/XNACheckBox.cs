@@ -99,21 +99,10 @@ namespace Rampastring.XNAUI.XNAControls
 
         public double AlphaRate { get; set; }
 
-        /// <summary>
-        /// Gets or sets the text of the check box.
-        /// </summary>
-        public override string Text
+        protected override void OnTextChange(string v)
         {
-            get
-            {
-                return base.Text;
-            }
-
-            set
-            {
-                base.Text = value;
-                SetTextPositionAndSize();
-            }
+            base.OnTextChange(v);
+            SetTextPositionAndSize();
         }
 
         /// <summary>

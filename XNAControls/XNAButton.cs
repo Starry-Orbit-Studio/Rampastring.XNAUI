@@ -49,18 +49,11 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-        string _text = String.Empty;
-        public override string Text
+        protected override void OnTextChange(string v)
         {
-            get { return _text; }
-            set
-            {
-                _text = value;
-                if (AdaptiveText)
-                {
-                    CalculateTextPosition();
-                }
-            }
+            base.OnTextChange(v);
+            if (AdaptiveText)
+                CalculateTextPosition();
         }
 
         public int TextXPosition { get; set; }
@@ -184,7 +177,7 @@ namespace Rampastring.XNAUI.XNAControls
 
         private void CalculateTextPosition()
         {
-            Vector2 textSize = Renderer.GetTextDimensions(_text, GetFont());
+            Vector2 textSize = Renderer.GetTextDimensions(Text, GetFont());
 
             if (textSize.X < Width)
             {
@@ -334,9 +327,9 @@ namespace Rampastring.XNAUI.XNAControls
             Vector2 textPosition = new Vector2(TextXPosition, TextYPosition);
 
             if (!Enabled || !AllowClick)
-                DrawStringWithShadow(_text, GetFont(), textPosition, TextColorDisabled);
+                DrawStringWithShadow(Text, GetFont(), textPosition, TextColorDisabled);
             else
-                DrawStringWithShadow(_text, GetFont(), textPosition, textColor);
+                DrawStringWithShadow(Text, GetFont(), textPosition, textColor);
 
             base.Draw(gameTime);
         }

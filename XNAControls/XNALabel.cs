@@ -52,18 +52,10 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         public LabelTextAnchorInfo TextAnchor { get; set; }
 
-        public override string Text
+        protected override void OnTextChange(string v)
         {
-            get
-            {
-                return base.Text;
-            }
-
-            set
-            {
-                base.Text = value;
-                RefreshClientRectangle();
-            }
+            base.OnTextChange(v);
+            RefreshClientRectangle();
         }
 
         private void RefreshClientRectangle()
@@ -107,15 +99,15 @@ namespace Rampastring.XNAUI.XNAControls
         {
             switch (property)
             {
-                case "TextColor":
+                case nameof(TextColor):
                     if (this.TryGet(property, out Color c))
                         TextColor = c;
                     return;
-                case "AnchorPoint":
+                case nameof(AnchorPoint):
                     if (this.TryGet(property, out Point p))
                         AnchorPoint = new Vector2(p.X, p.Y);
                     return;
-                case "TextAnchor":
+                case nameof(TextAnchor):
                     if (this.TryGet(property, out var s)
                         && Enum.TryParse(s, out LabelTextAnchorInfo info))
                         TextAnchor = info;

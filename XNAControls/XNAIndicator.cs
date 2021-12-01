@@ -83,18 +83,10 @@ namespace Rampastring.XNAUI.XNAControls
 
         public double AlphaRate { get; set; }
 
-        /// <summary>
-        /// Gets or sets the text of the indicator.
-        /// </summary>
-        public override string Text
+        protected override void OnTextChange(string v)
         {
-            get => base.Text;
-
-            set
-            {
-                base.Text = value;
-                SetTextPositionAndSize();
-            }
+            base.OnTextChange(v);
+            SetTextPositionAndSize();
         }
 
         /// <summary>

@@ -7,6 +7,8 @@ using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Rampastring.Tools;
 
+using SharpDX.Direct3D9;
+
 namespace Rampastring.XNAUI.XNAControls
 {
     /// <summary>
@@ -18,17 +20,10 @@ namespace Rampastring.XNAUI.XNAControls
         {
         }
 
-        public override string Text
-        {
-            get
-            {
-                return base.Text;
-            }
-
-            set
-            {
-                base.Text = Renderer.FixText(value, GetFont(), Width - TextXMargin * 2).Text;
-            }
+        protected override void OnTextChange(string v)
+{
+            _text = Renderer.FixText(v, GetFont(), Width - TextXMargin * 2).Text;
+            base.OnTextChange(_text);
         }
 
         private Color? _textColor;

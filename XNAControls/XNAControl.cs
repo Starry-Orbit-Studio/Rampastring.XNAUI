@@ -162,6 +162,9 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
+        public bool SkipParseTextFromStringManager { get; set; }
+        public bool SkipParseFromStringManager { get; set; }
+
         /// <summary>
         /// Called when the control's size is changed.
         /// </summary>
@@ -312,10 +315,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// A read-only list of the control's children. 
         /// Call the AddChild method to add children to the control.
         /// </summary>
-        public ReadOnlyCollection<XNAControl> Children
-        {
-            get { return new ReadOnlyCollection<XNAControl>(_children); }
-        }
+        public ReadOnlyCollection<XNAControl> Children => new ReadOnlyCollection<XNAControl>(_children);
         /// <summary>
         /// Set if the control is detached from its parent.
         /// A detached control's mouse input is handled independently
@@ -341,9 +341,34 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
         public int CursorTextureIndex { get; set; }
-        public virtual string Text { get; set; }
-        public virtual string Font { get; set; }
-        public virtual int FontSize { get; set; }
+
+        public virtual string Text
+        {
+            get => _text;
+            set => OnTextChange(_text = value);
+        }
+
+        public string Font
+        {
+            get => _font;
+            set => OnFontChange(_font = value);
+        }
+
+        public int FontSize
+        {
+            get => _fontSize;
+            set => OnFontSizeChange(_fontSize = value);
+        }
+
+        protected virtual void OnTextChange(string v)
+        { }
+
+        protected virtual void OnFontChange(string v)
+        { }
+
+        protected virtual void OnFontSizeChange(int v)
+        { }
+
         public object Tag { get; set; }
         public bool Killed { get; set; }
         /// <summary>
@@ -1598,31 +1623,51 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
+
+        protected string GetUIString(string property, string prefix = "UI")
+            => StringManager.GetString(string.Join(".", new[] { prefix, Name, property }));
+        protected string GetUIStringEx(string property, string prefix = "UI")
+        {
+            string origin = string.Join(".", new[] { prefix, Name, property });
+            string value = GetUIString(property, prefix);
+            if (value != origin)
+                return value;
+
+            string key = origin;
+
+            Type type = GetType();
+
+            while (value == key)
+            {
+                key = string.Join(".", new[] { prefix, type.Name, property });
+                value = StringManager.GetString(key);
+                if (type == typeof(XNAControl))
+                    break;
+
+                type = type.BaseType;
+            }
+            return value != key ? value : origin;
+        }
+
+        protected static string Format(string format, params string[] args) => args != null ? string.Format(format, args) : format;
+
         protected virtual void ParseLocaleStringsFromStringManager()
         {
-            var tmp = this.GetUIString(nameof(Text));
-            if (!tmp.StartsWith("UI."))
-            {
-                Logger.Debug($"Use Text \"{tmp}\"");
-                Text = tmp;
-            }
+            if (SkipParseFromStringManager)
+                return;
+            if (!SkipParseTextFromStringManager)
+                Text = GetUIString(nameof(Text));
+            Font = GetUIStringEx(nameof(Font));
 
-            tmp = this.GetUIStringEx(nameof(Font));
-            if (!tmp.StartsWith("UI."))
-            {
-                Logger.Debug($"Use Font \"{tmp}\"");
-                Font = tmp;
-            }
-
-            tmp = this.GetUIStringEx(nameof(FontSize));
-            if (!tmp.StartsWith("UI.") && int.TryParse(tmp, out var i))
-            {
-                Logger.Debug($"Use FontSize \"{i}\"");
+            if (int.TryParse(GetUIStringEx(nameof(FontSize)), out var i))
                 FontSize = i;
-            }
 
         }
         private (string info, SpriteFontBase font) _fontCache = (string.Empty, null);
+        private string _font;
+        private int _fontSize;
+        protected string _text;
+
         public virtual SpriteFontBase GetFont()
         {
             var key = $"{Font}:{FontSize}";

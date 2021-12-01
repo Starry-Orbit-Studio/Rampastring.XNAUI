@@ -11,6 +11,7 @@ namespace Rampastring.XNAUI.XNAControls
     {
         public XNAPanel(WindowManager windowManager) : base(windowManager)
         {
+            SkipParseTextFromStringManager = true;
             VirtualProperties.Add("Padding", typeof(string));
         }
 

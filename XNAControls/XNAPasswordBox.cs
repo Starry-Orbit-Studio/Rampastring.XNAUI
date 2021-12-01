@@ -46,15 +46,8 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         public override string Text
         {
-            get
-            {
-                return new string(VisibleChar, base.Text.Length);
-            }
-
-            set
-            {
-                base.Text = value;
-            }
+            get => new string(VisibleChar, base.Text.Length);
+            set => base.Text = value;
         }
     }
 }

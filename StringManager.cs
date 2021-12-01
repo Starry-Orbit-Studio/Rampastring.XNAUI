@@ -63,35 +63,5 @@ namespace Rampastring.XNAUI
         public static string GetCurrentName()
             => _dictionary == null ? "None" : _dictionary.TryGetValue("locale", out string value) ? value : "Unknown";
 
-        /// <summary>
-        /// Get UI String
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="property"></param>
-        /// <returns></returns>
-        internal static string GetUIString(this XNAControls.XNAControl control, string property)
-            => GetString(string.Join(".", new[] { "UI", control.Name, property }));
-        internal static string GetUIStringEx(this XNAControls.XNAControl control, string property)
-        {
-            string origin = string.Join(".", new[] { "UI", control.Name, property });
-            string value = control.GetUIString(property);
-            if (value != origin)
-                return value;
-
-            string key = origin;
-
-            Type type = control.GetType();
-
-            while (value == key)
-            {
-                key = string.Join(".", new[] { "UI", type.Name, property });
-                value = GetString(key);
-                if (type == typeof(XNAControls.XNAControl))
-                    break;
-
-                type = type.BaseType;
-            }
-            return value != key ? value : origin;
-        }
     }
 }
