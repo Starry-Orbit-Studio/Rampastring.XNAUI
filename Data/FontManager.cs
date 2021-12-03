@@ -46,8 +46,15 @@ namespace Rampastring.XNAUI.Data
                     using (var fs = x.OpenRead())
                         result.AddFont(fs);
                 });
+
+                //using (var fs = file[0].OpenRead())
+                //    result.AddFont(fs);
+
                 return _cache[key] = result;
             }
+
+            if (key == DefaultFontName)
+                throw new InvalidOperationException("Not Set Font in Locales File!");
 
             Logger.Warn($"Can't find the font \"{key}\". Use default font \"{DefaultFontName}\".");
             return DefaultFont;
@@ -86,13 +93,21 @@ namespace Rampastring.XNAUI.Data
                 fontCol.AddFontFile(files[i]);
                 var font = fontCol.Families.Last();
                 var name = font.Name;
+                //if (font.IsStyleAvailable(FontStyle.Bold))
+                //    name += "-Bold";
+                //if (font.IsStyleAvailable(FontStyle.Italic))
+                //    name += "-Italic";
+                //if (font.IsStyleAvailable(FontStyle.Underline))
+                //    name += "-Underline";
+                //if (font.IsStyleAvailable(FontStyle.Strikeout))
+                //    name += "-Strikeout";
 
                 Logger.Debug($"Loading Font \"{name}\" from \"{files[i]}\"");
                 var file = new FileInfo(files[i]);
                 if (_fonts.TryGetValue(name, out var list))
                     list.Add(file);
-
-                _fonts[name] = new List<FileInfo>() { file };
+                else
+                    _fonts[name] = new List<FileInfo>() { file };
             }
         }
     }
