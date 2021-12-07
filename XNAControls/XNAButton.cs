@@ -1,13 +1,14 @@
 ﻿using FontStashSharp;
 
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
 using Rampastring.Tools;
 
 using System;
+
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Rampastring.XNAUI.XNAControls
 {
@@ -34,6 +35,8 @@ namespace Rampastring.XNAUI.XNAControls
         public float HoverTextureAlpha { get; private set; } = 0.0f;
 
         public Keys HotKey { get; set; }
+
+        public int TextShadowDistance { get; set; } = UISettings.ActiveSettings.TextShadowDistance;
 
         private bool _allowClick = true;
         public bool AllowClick
@@ -250,6 +253,10 @@ namespace Rampastring.XNAUI.XNAControls
                     if (this.TryGet(property, out t))
                         HoverTexture = t;
                     return;
+                case nameof(TextShadowDistance):
+                    if (this.TryGet(property, out int i))
+                        TextShadowDistance = i;
+                    return;
             }
 
             base.ParseAttributeFromUIConfigurations(property, type);
@@ -327,9 +334,9 @@ namespace Rampastring.XNAUI.XNAControls
             Vector2 textPosition = new Vector2(TextXPosition, TextYPosition);
 
             if (!Enabled || !AllowClick)
-                DrawStringWithShadow(Text, GetFont(), textPosition, TextColorDisabled);
+                DrawStringWithShadow(Text, GetFont(), textPosition, TextColorDisabled, 1.0f, TextShadowDistance);
             else
-                DrawStringWithShadow(Text, GetFont(), textPosition, textColor);
+                DrawStringWithShadow(Text, GetFont(), textPosition, textColor, 1.0f, TextShadowDistance);
 
             base.Draw(gameTime);
         }

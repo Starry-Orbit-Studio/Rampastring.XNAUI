@@ -1,7 +1,6 @@
 ﻿using FontStashSharp;
 
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 
 using Rampastring.Tools;
@@ -145,13 +144,13 @@ namespace Rampastring.XNAUI.XNAControls
         {
             switch (property)
             {
-                case "HighlightColor":
-                    if (this.TryGet(property, out Color color))
-                        HighlightColor = color;
-                    return;
                 case nameof(IdleColor):
-                    if (this.TryGet(property, out color))
+                    if (this.TryGet(property, out Color color))
                         IdleColor = color;
+                    return;
+                case "HighlightColor":
+                    if (this.TryGet(property, out color))
+                        HighlightColor = color;
                     return;
                 case "AlphaRate":
                     if (this.TryGet(property, out double d))

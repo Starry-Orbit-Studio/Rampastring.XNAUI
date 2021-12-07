@@ -249,15 +249,20 @@ namespace Rampastring.XNAUI
         {
             spriteBatch.DrawString(font, text, location, color, new Vector2(scale), 0f, Vector2.Zero, 0f);
         }
-        public static void DrawStringWithShadow(string text, SpriteFontBase font, Vector2 location, Color color, float scale = 1)
+        public static void DrawStringWithShadow(string text, SpriteFontBase font, Vector2 location, Color color, float scale = 1, float shadowDistance = 1.0f)
         {
 #if XNA
-            spriteBatch.DrawString(fonts[fontIndex], text, new Vector2(location.X + 1f, location.Y + 1f), new Color(0, 0, 0, color.A));
+            spriteBatch.DrawString(font, text,
+                new Vector2(location.X + shadowDistance, location.Y + shadowDistance),
+                new Color(0, 0, 0, color.A));
 #else
             spriteBatch.DrawString(font, text,
-                new Vector2(location.X + 1f, location.Y + 1f), new Color((byte)0, (byte)0, (byte)0, color.A),
-                new Vector2(scale), 0f, Vector2.Zero, 0f);
+                new Vector2(location.X + shadowDistance, location.Y + shadowDistance),
+                new Color((byte)0, (byte)0, (byte)0, color.A),
+                new Vector2(scale), 0f,
+                Vector2.Zero, 0f);
 #endif
+
             spriteBatch.DrawString(font, text, location, color, new Vector2(scale), 0f, Vector2.Zero, 0f);
         }
 
@@ -292,25 +297,6 @@ namespace Rampastring.XNAUI
                 null, color, (float)Math.Atan2(line.Y, line.X), new Vector2(0, 0), SpriteEffects.None, 0f);
         }
 
-        private static Dictionary<(string name, int size), WeakReference<SpriteFontBase>> _fontCache
-            = new Dictionary<(string, int), WeakReference<SpriteFontBase>>();
-        [Obsolete]
-        public static SpriteFontBase GetFont(string name, int size)
-        {
-            if (string.IsNullOrEmpty(name))
-                name = DefaultFont;
-            if (size >= 0)
-                size = 14;
-
-            SpriteFontBase font;
-
-            if (!_fontCache.TryGetValue((name, size), out var value))
-                _fontCache.Add((name, size), new WeakReference<SpriteFontBase>(font = AssetLoader.FontManager[name].GetFont(size)));
-            else if (!value.TryGetTarget(out font))
-                _fontCache[(name, size)].SetTarget(font = AssetLoader.FontManager[name].GetFont(size));
-
-            return font;
-        }
         #endregion
     }
 }
