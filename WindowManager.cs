@@ -340,7 +340,7 @@ namespace Rampastring.XNAUI
         /// <param name="control">The control to center.</param>
         public void CenterControlOnScreen(XNAControl control)
         {
-            control.ClientRectangle = new Rectangle((RenderResolutionX - control.Width) / 2,
+            control.SetClientRectangle((RenderResolutionX - control.Width) / 2,
                 (RenderResolutionY - control.Height) / 2, control.Width, control.Height);
         }
 
@@ -547,8 +547,7 @@ namespace Rampastring.XNAUI
                     c.Invoke();
             }
 
-            XNAControl activeControl = null;
-            activeControlName = null;
+            ActiveControl = null;
 
             if (HasFocus)
                 Keyboard.Update(gameTime);
@@ -562,14 +561,13 @@ namespace Rampastring.XNAUI
                 XNAControl control = Controls[i];
 
                 if (HasFocus && control.InputEnabled && control.Enabled &&
-                    (activeControl == null &&
+                    (ActiveControl == null &&
                     control.GetWindowRectangle().Contains(Cursor.Location)
                     ||
                     control.Focused))
                 {
                     control.IsActive = true;
-                    activeControl = control;
-                    activeControlName = control.Name;
+                    ActiveControl = control;
                 }
                 else
                     control.IsActive = false;
@@ -578,11 +576,10 @@ namespace Rampastring.XNAUI
                 {
                     control.Update(gameTime);
 
-                    if (control.InputPassthrough && activeControl == control && !control.ChildHandledInput)
+                    if (control.InputPassthrough && ActiveControl == control && !control.ChildHandledInput)
                     {
                         control.IsActive = false;
-                        activeControl = null;
-                        activeControlName = null;
+                        ActiveControl = null;
                     }
                 }
             }
@@ -590,7 +587,8 @@ namespace Rampastring.XNAUI
             base.Update(gameTime);
         }
 
-        public string activeControlName;
+        internal XNAControl ActiveControl { get; private set; } = null;
+        internal void SetActiveControl(XNAControl child) => ActiveControl = child;
 
         /// <summary>
         /// Draws all the visible controls in the WindowManager.
@@ -655,9 +653,11 @@ namespace Rampastring.XNAUI
                 WindowWidth - (SceneXPosition * 2), WindowHeight - (SceneYPosition * 2)), Color.White);
 
 #if DEBUG
-            var font = Renderer.GetFont(Renderer.DefaultFont, 12);
-            Renderer.DrawString("Active control " + activeControlName, font, Vector2.Zero, Color.Red);
-            Renderer.DrawString("IME Status " + IMEHandler?.Enabled, font, new Vector2(0, 20), Color.Red);
+            var font = AssetLoader.FontManager.DefaultFont.GetFont(14);
+            int yDebug = 0;
+            Renderer.DrawString($"Active control {ActiveControl?.Name}:{ActiveControl?.GetType().Name}", font, new Vector2(0, yDebug), Color.Red);
+            yDebug += 20;
+            Renderer.DrawString("IME Status " + IMEHandler?.Enabled, font, new Vector2(0, yDebug), Color.Red);
 #endif
 
             if (Cursor.Visible)
@@ -667,5 +667,6 @@ namespace Rampastring.XNAUI
 
             base.Draw(gameTime);
         }
+
     }
 }

@@ -49,9 +49,9 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-        protected override void OnTextChange(string v)
+        protected override void OnTextChanged(string v)
         {
-            base.OnTextChange(v);
+            base.OnTextChanged(v);
             if (AdaptiveText)
                 CalculateTextPosition();
         }
@@ -158,7 +158,7 @@ namespace Rampastring.XNAUI.XNAControls
 
             if (IdleTexture != null && Width == 0 && Height == 0)
             {
-                ClientRectangle = new Rectangle(X, Y,
+                this.SetClientRectangle(X, Y,
                     IdleTexture.Width, IdleTexture.Height);
             }
 
@@ -240,7 +240,7 @@ namespace Rampastring.XNAUI.XNAControls
                     if (this.TryGet(property, out Texture2D t))
                     {
                         IdleTexture = t;
-                        ClientRectangle = new Rectangle(X, Y,
+                        this.SetClientRectangle(X, Y,
                             IdleTexture.Width, IdleTexture.Height);
                         if (AdaptiveText)
                             CalculateTextPosition();

@@ -6,8 +6,6 @@ using Microsoft.Xna.Framework.Graphics;
 
 using Rampastring.Tools;
 
-using SharpDX.Direct3D9;
-
 using System;
 
 namespace Rampastring.XNAUI.XNAControls
@@ -99,9 +97,9 @@ namespace Rampastring.XNAUI.XNAControls
 
         public double AlphaRate { get; set; }
 
-        protected override void OnTextChange(string v)
+        protected override void OnTextChanged(string v)
         {
-            base.OnTextChange(v);
+            base.OnTextChanged(v);
             SetTextPositionAndSize();
         }
 

@@ -7,8 +7,6 @@ using FontStashSharp;
 using Microsoft.Xna.Framework;
 using Rampastring.Tools;
 
-using SharpDX.Direct3D9;
-
 namespace Rampastring.XNAUI.XNAControls
 {
     /// <summary>
@@ -20,10 +18,10 @@ namespace Rampastring.XNAUI.XNAControls
         {
         }
 
-        protected override void OnTextChange(string v)
+        protected override void OnTextChanged(string v)
 {
             _text = Renderer.FixText(v, GetFont(), Width - TextXMargin * 2).Text;
-            base.OnTextChange(_text);
+            base.OnTextChanged(_text);
         }
 
         private Color? _textColor;
@@ -45,16 +43,16 @@ namespace Rampastring.XNAUI.XNAControls
 
         public int TextYPosition { get; set; } = 3;
 
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
         {
-            switch (key)
+            switch (property)
             {
                 case "TextColor":
-                    TextColor = AssetLoader.GetColorFromString(value);
+                    if (this.TryGet(property, out Color color))
+                        TextColor = color;
                     return;
             }
-
-            base.ParseAttributeFromINI(iniFile, key, value);
+            base.ParseAttributeFromUIConfigurations(property, type);
         }
 
         public override void Draw(GameTime gameTime)

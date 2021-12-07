@@ -24,13 +24,13 @@ namespace Rampastring.XNAUI.XNAControls
             var scrollUpTexture = AssetLoader.LoadTexture("sbUpArrow.png");
 
             btnScrollUp = new XNAButton(WindowManager);
-            btnScrollUp.ClientRectangle = new Rectangle(0, 0, scrollUpTexture.Width, scrollUpTexture.Height);
+            btnScrollUp.SetSize(scrollUpTexture.Width, scrollUpTexture.Height);
             btnScrollUp.IdleTexture = scrollUpTexture;
 
             var scrollDownTexture = AssetLoader.LoadTexture("sbDownArrow.png");
 
             btnScrollDown = new XNAButton(WindowManager);
-            btnScrollDown.ClientRectangle = new Rectangle(0, Height - scrollDownTexture.Height,
+            btnScrollDown.SetClientRectangle(0, Height - scrollDownTexture.Height,
                 scrollDownTexture.Width, scrollDownTexture.Height);
             btnScrollDown.IdleTexture = scrollDownTexture;
 
@@ -39,7 +39,7 @@ namespace Rampastring.XNAUI.XNAControls
 
         private void XNAScrollBar_ClientRectangleUpdated(object sender, EventArgs e)
         {
-            btnScrollDown.ClientRectangle = new Rectangle(0,
+            btnScrollDown.SetClientRectangle(0,
                 Height - btnScrollDown.Height,
                 btnScrollDown.Width, btnScrollDown.Height);
             Refresh();

@@ -16,10 +16,9 @@ namespace Rampastring.XNAUI.Data
 {
     public sealed class FontManager
     {
-        private Dictionary<string, FontSystem> _cache = new Dictionary<string, FontSystem>();
-        private Dictionary<string, List<FileInfo>> _fonts = new Dictionary<string, List<FileInfo>>();
+        private readonly Dictionary<string, FontSystem> _cache = new Dictionary<string, FontSystem>();
+        private readonly Dictionary<string, List<FileInfo>> _fonts = new Dictionary<string, List<FileInfo>>();
         private FontSystem _defaultFont;
-        private string _defaultFontName;
 
         public int DefaultCharacter { get; set; }
 

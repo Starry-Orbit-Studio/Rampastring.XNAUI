@@ -1,5 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
+
 using Rampastring.Tools;
+
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
@@ -164,7 +166,7 @@ namespace Rampastring.XNAUI.XNAControls
 
                 foreach (XNAListBox lb in listBoxes)
                 {
-                    lb.AllowRightClickUnselect = _allowRightClickUnselect;  
+                    lb.AllowRightClickUnselect = _allowRightClickUnselect;
                 }
             }
         }
@@ -179,68 +181,70 @@ namespace Rampastring.XNAUI.XNAControls
             set { listBoxes[listBoxes.Count - 1].DrawSelectionUnderScrollbar = value; }
         }
 
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
         {
-            switch (key)
+            switch (property)
             {
                 case nameof(DrawSelectionUnderScrollbar):
-                    DrawSelectionUnderScrollbar = Conversions.BooleanFromString(value, true);
-                    return;
-                case nameof(Font):
-                    Font = value;
-                    return;
-                case nameof(FontSize):
-                    FontSize = Conversions.IntFromString(value, 12);
-                    return;
-                case nameof(HeaderFont):
-                    HeaderFont = value;
-                    return;
-                case nameof(HeaderFontSize):
-                    HeaderFontSize = Conversions.IntFromString(value, 12);
+                    if (this.TryGet(property, out bool b))
+                        DrawSelectionUnderScrollbar = b;
                     return;
             }
+            // TODO: Fixed This
+            //            const string columnWidthKeyStart = "ColumnWidth";
+            //            if (key.StartsWith(columnWidthKeyStart))
+            //            {
+            //                int headerIndex = Conversions.IntFromString(key.Substring(columnWidthKeyStart.Length), -1);
+            //                if (headerIndex == -1 || headerIndex >= headers.Count)
+            //return;
 
-            const string columnWidthKeyStart = "ColumnWidth";
-            if (key.StartsWith(columnWidthKeyStart))
-            {
-                int headerIndex = Conversions.IntFromString(key.Substring(columnWidthKeyStart.Length), -1);
-                if (headerIndex == -1 || headerIndex >= headers.Count)
-                    return;
+            //                ChangeColumnWidth(headerIndex, Conversions.IntFromString(value, headers[headerIndex].Width));
+            //            }
 
-                ChangeColumnWidth(headerIndex, Conversions.IntFromString(value, headers[headerIndex].Width));
-            }
+            //            if (key.StartsWith("Column"))
+            //            {
+            //string[] parts = value.Split(':');
+            //                if (parts.Length != 2)
+            //                    return;
 
-            if (key.StartsWith("Column"))
-            {
-                string[] parts = value.Split(':');
-                if (parts.Length != 2)
-                    return;
+            //                if (!int.TryParse(parts[1], out int width))
+            //                    return;
 
-                if (!int.TryParse(parts[1], out int width))
-                    return;
+            //                AddColumn(parts[0], width);
+            //            }
 
-                AddColumn(parts[0], width);
-            }
+            //            // Usage: ListBoxYAttribute:<AttrName>=<value>
+            //            // Allows setting list box attributes
+            //            if (key.StartsWith("ListBox") && key.Length > "ListBoxYAttribute:".Length)
+            //            {
+            //                int listBoxId = Conversions.IntFromString(key.Substring("ListBox".Length, 1), -1);
+            //                if (listBoxId == -1)
+            //                    return;
 
-            // Usage: ListBoxYAttribute:<AttrName>=<value>
-            // Allows setting list box attributes
-            if (key.StartsWith("ListBox") && key.Length > "ListBoxYAttribute:".Length)
-            {
-                int listBoxId = Conversions.IntFromString(key.Substring("ListBox".Length, 1), -1);
-                if (listBoxId == -1)
-                    return;
+            //                if (listBoxId >= listBoxes.Count)
+            //                    return;
 
-                if (listBoxId >= listBoxes.Count)
-                    return;
+            //                if (key.Substring("ListBoxY".Length, ":Attribute".Length) != ":Attribute")
+            //                    return;
 
-                if (key.Substring("ListBoxY".Length, ":Attribute".Length) != ":Attribute")
-                    return;
+            //                string attrName = key.Substring("ListBoxYAttribute:".Length);
+            //                listBoxes[listBoxId].ParseAttributeFromINI(iniFile, attrName, value);
+            //}
+            base.ParseAttributeFromUIConfigurations(property, type);
+        }
 
-                string attrName = key.Substring("ListBoxYAttribute:".Length);
-                listBoxes[listBoxId].ParseAttributeFromINI(iniFile, attrName, value);
-            }
+        protected override void ParseLocaleStringsFromStringManager()
+        {
+            base.ParseLocaleStringsFromStringManager();
 
-            base.ParseAttributeFromINI(iniFile, key, value);
+            HeaderFont = GetUIStringEx(nameof(HeaderFont));
+            if (HeaderFont.StartsWith("UI."))
+                HeaderFont = Font;
+
+            if (int.TryParse(GetUIStringEx(nameof(HeaderFontSize)), out var i))
+                HeaderFontSize = i;
+            else
+                HeaderFontSize = FontSize;
         }
 
         /// <summary>
@@ -320,12 +324,12 @@ namespace Rampastring.XNAUI.XNAControls
 
             int width = GetExistingWidth();
 
-            header.ClientRectangle = new Rectangle(width, 0, header.Width, header.Height);
+            header.SetClientRectangle(width, 0, header.Width, header.Height);
 
             headers.Add(header);
 
             listBox.Name = Name + "_lb" + listBoxes.Count;
-            listBox.ClientRectangle = new Rectangle(width, header.Bottom - 1,
+            listBox.SetClientRectangle(width, header.Bottom - 1,
                 header.Width, Height - header.Bottom + 1);
             listBox.DrawBorders = DrawListBoxBorders;
             listBox.LineHeight = LineHeight;

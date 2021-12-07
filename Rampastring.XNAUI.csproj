@@ -23,26 +23,34 @@
     <DefineConstants Condition="'$(Platform)'=='XNAFramework'">$(DefineConstants);XNA</DefineConstants>
     <DefineConstants Condition="'$(Platform)'=='FNA'">$(DefineConstants);FNA</DefineConstants>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Compile Condition="'$(Platform)'=='FNA'" Remove="PlatformSpecific\WindowsGameWindowManager.cs" />
     <Compile Condition="'$(Platform)'!='FNA'" Remove="PlatformSpecific\FNAGameWindowManager.cs" />
     <None Include="..\..\README.md" Pack="true" PackagePath="" />
     <None Include="..\..\LICENSE.md" Pack="true" PackagePath="" />
   </ItemGroup>
-  
+
   <Import Project="$(MSBuildProjectDirectory)\..\build\Framework.props" />
 
   <ItemGroup>
     <PackageReference Include="Portable.System.ValueTuple" Version="1.0.1" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\FontStashSharp\src\XNA\FontStashSharp.csproj" />
     <ProjectReference Include="..\MonoGame.IMEHelper\MonoGame.IMEHelper.csproj" />
     <ProjectReference Include="..\Rampastring.Tools\Rampastring.Tools.csproj" />
   </ItemGroup>
-  
+
+  <ItemGroup>
+    <Analyzer Include="..\Shimakaze.Analyzers\bin\$(Platform)\$(Configuration)\netstandard2.0\Shimakaze.Analyzers.dll" />
+  </ItemGroup>
+
+  <Target Name="BuildAnalyzers" BeforeTargets="CoreCompile">
+    <MSBuild Targets="Build" Projects="..\Shimakaze.Analyzers\Shimakaze.Analyzers.csproj" />
+  </Target>
+
   <ItemGroup>
     <Folder Include="Data\Fonts\" />
   </ItemGroup>

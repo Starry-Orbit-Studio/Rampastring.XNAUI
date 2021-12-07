@@ -100,11 +100,11 @@ namespace Rampastring.XNAUI.XNAControls
                         int top = int.Parse(parts[1]);
                         int right = int.Parse(parts[2]);
                         int bottom = int.Parse(parts[3]);
-                        ClientRectangle = new Rectangle(X - left, Y - top,
+                        this.SetClientRectangle(X - left, Y - top,
                             Width + left + right, Height + top + bottom);
                         foreach (XNAControl child in Children)
                         {
-                            child.ClientRectangle = new Rectangle(child.X + left,
+                            child.SetClientRectangle(child.X + left,
                                 child.Y + top, child.Width, child.Height);
                         }
                     }

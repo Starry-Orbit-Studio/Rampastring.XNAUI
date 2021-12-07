@@ -8,7 +8,6 @@ using System;
 using System.Text;
 using System.Text.RegularExpressions;
 using FontStashSharp;
-using SharpDX.Direct3D9;
 
 #if !XNA
 using TextInputEventArgs = Microsoft.Xna.Framework.TextInputEventArgs;
@@ -61,12 +60,6 @@ namespace Rampastring.XNAUI.XNAControls
         /// Raised when the text box receives input that changes its text.
         /// </summary>
         public event EventHandler InputReceived;
-
-        /// <summary>
-        /// Raised whenever the text of the text box is changed, by the user or
-        /// programmatically.
-        /// </summary>
-        public event EventHandler TextChanged;
 
         private Color? _textColor;
 
@@ -129,7 +122,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         public int MaximumTextLength { get; set; } = int.MaxValue;
 
-        protected override void OnTextChange(string v)
+        protected override void OnTextChanged(string v)
         {
             if (v is null)
                 throw new InvalidOperationException("XNATextBox text cannot be set to null.");
@@ -153,8 +146,7 @@ namespace Rampastring.XNAUI.XNAControls
                 }
             }
 
-            TextChanged?.Invoke(this, EventArgs.Empty);
-            base.OnTextChange(_text);
+            base.OnTextChanged(_text);
         }
 
         private string savedText = string.Empty;
@@ -199,15 +191,16 @@ namespace Rampastring.XNAUI.XNAControls
         private TimeSpan timeSinceLastScroll = TimeSpan.Zero;
         private bool isScrollingQuickly = false;
 
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
         {
-            if (key == nameof(MaximumTextLength))
+            switch (property)
             {
-                MaximumTextLength = Conversions.IntFromString(value, MaximumTextLength);
-                return;
+                case nameof(MaximumTextLength):
+                    if (this.TryGet(property, out int i))
+                        MaximumTextLength = i;
+                    return;
             }
-
-            base.ParseAttributeFromINI(iniFile, key, value);
+            base.ParseAttributeFromUIConfigurations(property, type);
         }
 
         /// <summary>
@@ -285,7 +278,7 @@ namespace Rampastring.XNAUI.XNAControls
                         }
                     }
 
-                    TextChanged?.Invoke(this, EventArgs.Empty);
+                    OnTextChanged(_text);
                     break;
             }
 
@@ -539,7 +532,7 @@ namespace Rampastring.XNAUI.XNAControls
                 if (TextEndPosition > _text.Length || !TextFitsBox())
                     TextEndPosition--;
 
-                TextChanged?.Invoke(this, EventArgs.Empty);
+                OnTextChanged(_text);
             }
 
             InputReceived?.Invoke(this, EventArgs.Empty);
@@ -556,7 +549,7 @@ namespace Rampastring.XNAUI.XNAControls
                     TextStartPosition--;
 
                 TextEndPosition--;
-                TextChanged?.Invoke(this, EventArgs.Empty);
+                OnTextChanged(_text);
             }
 
             InputReceived?.Invoke(this, EventArgs.Empty);

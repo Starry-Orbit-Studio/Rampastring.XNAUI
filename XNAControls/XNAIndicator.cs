@@ -83,9 +83,9 @@ namespace Rampastring.XNAUI.XNAControls
 
         public double AlphaRate { get; set; }
 
-        protected override void OnTextChange(string v)
+        protected override void OnTextChanged(string v)
         {
-            base.OnTextChange(v);
+            base.OnTextChanged(v);
             SetTextPositionAndSize();
         }
 
@@ -125,25 +125,20 @@ namespace Rampastring.XNAUI.XNAControls
                 Logger.Log($"{nameof(XNAIndicator<T>)}: Tried to switch to non-existing texture {key} at indicator {Name}!");
         }
 
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
         {
-            switch (key)
+            switch (property)
             {
                 case "HighlightColor":
-                    HighlightColor = AssetLoader.GetColorFromString(value);
+                    if (this.TryGet(property, out Color color))
+                        HighlightColor = color;
                     return;
                 case "AlphaRate":
-                    AlphaRate = Conversions.DoubleFromString(value, AlphaRate);
-                    return;
-                case nameof(Font):
-                    Font = value;
-                    return;
-                case nameof(FontSize):
-                    FontSize = Conversions.IntFromString(value, 12);
+                    if (this.TryGet(property, out double d))
+                        AlphaRate = d;
                     return;
             }
-
-            base.ParseAttributeFromINI(iniFile, key, value);
+            base.ParseAttributeFromUIConfigurations(property, type);
         }
 
         /// <summary>

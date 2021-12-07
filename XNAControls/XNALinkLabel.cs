@@ -54,22 +54,25 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         public bool DrawUnderline { get; set; } = true;
 
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
         {
-            switch (key)
+            switch (property)
             {
                 case "IdleColor":
-                    IdleColor = AssetLoader.GetColorFromString(value);
+                    if (this.TryGet(property, out Color c))
+                        IdleColor = c;
                     return;
                 case "HoverColor":
-                    HoverColor = AssetLoader.GetColorFromString(value);
+                    if (this.TryGet(property, out c))
+                        HoverColor = c;
                     return;
                 case "DrawUnderline":
-                    DrawUnderline = Conversions.BooleanFromString(value, DrawUnderline);
+                    if (this.TryGet(property, out bool b))
+                        DrawUnderline = b;
                     return;
             }
 
-            base.ParseAttributeFromINI(iniFile, key, value);
+            base.ParseAttributeFromUIConfigurations(property, type);
         }
 
         public override void Initialize()

@@ -27,7 +27,7 @@ namespace Rampastring.XNAUI.XNAControls
             UpdateSize();
         }
 
-        public XNATextPart(string text) : this(text, Renderer.DefaultFont, 12, 1.0f, null, false) { }
+        public XNATextPart(string text) : this(text, AssetLoader.FontManager.DefaultFontName, 12, 1.0f, null, false) { }
 
         public XNATextPart(string text, string font, int fontSize, Color? color) : this(text, font, fontSize, 1.0f, color, false) { }
 
@@ -89,7 +89,7 @@ namespace Rampastring.XNAUI.XNAControls
 
         public Point Size { get; private set; }
 
-        public SpriteFontBase GetFont() => Renderer.GetFont(Font, FontSize);
+        public SpriteFontBase GetFont() => AssetLoader.FontManager[Font].GetFont(FontSize);
         private void UpdateSize()
         {
             Vector2 size = Renderer.GetTextDimensions(_text, GetFont()) * Scale;

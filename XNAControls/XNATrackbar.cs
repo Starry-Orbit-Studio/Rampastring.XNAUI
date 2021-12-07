@@ -10,14 +10,14 @@ namespace Rampastring.XNAUI.XNAControls
     {
         public XNATrackbar(WindowManager windowManager) : base(windowManager)
         {
-            
+
         }
 
         public event EventHandler ValueChanged;
 
-        public int MinValue { get; set; }
+        public int MinValue { get; set; } = 0;
 
-        public int MaxValue { get; set; }
+        public int MaxValue { get; set; } = 10;
 
         int value = 0;
         public int Value
@@ -41,7 +41,7 @@ namespace Rampastring.XNAUI.XNAControls
 
         public EnhancedSoundEffect ClickSound { get; set; }
 
-        public Texture2D ButtonTexture {get; set; }
+        public Texture2D ButtonTexture { get; set; }
 
         private bool isHeldDown = false;
 
@@ -59,30 +59,41 @@ namespace Rampastring.XNAUI.XNAControls
             //    Height = ButtonTexture.Height;
         }
 
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
         {
-            switch (key)
+            switch (property)
             {
                 case "MinValue":
-                    MinValue = iniFile.GetIntValue(Name, "MinValue", 0);
+                    if (this.TryGet(property, out int i))
+                        MinValue = i;
                     return;
                 case "MaxValue":
-                    MaxValue = iniFile.GetIntValue(Name, "MaxValue", 10);
+                    if (this.TryGet(property, out i))
+                        MaxValue = i;
                     return;
                 case "Value":
-                    Value = iniFile.GetIntValue(Name, "Value", 0);
+                    if (this.TryGet(property, out i))
+                        Value = i;
                     return;
                 case "ClickSound":
-                    ClickSound = EnhancedSoundEffect.GetOrCreate(value);
+                    if (this.TryGet(property, out EnhancedSoundEffect ef))
+                        ClickSound = ef;
                     return;
                 case nameof(ButtonTexture):
-                    ButtonTexture = AssetLoader.LoadTexture(value);
-                    if (Height == 0)
-                        Height = ButtonTexture.Height;
+                    if (this.TryGet(property, out Texture2D t))
+                    {
+                        ButtonTexture = t;
+                        if (Height == 0)
+                            Height = t.Height;
+                    }
                     return;
             }
+            base.ParseAttributeFromUIConfigurations(property, type);
+        }
 
-            base.ParseAttributeFromINI(iniFile, key, value);
+        public override void AddChild(XNAControl child)
+        {
+            base.AddChild(child);
         }
 
         /// <summary>

@@ -1,5 +1,10 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+
+using Microsoft.Xna.Framework;
+
 using Rampastring.Tools;
+
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Rampastring.XNAUI.XNAControls
 {
@@ -29,14 +34,23 @@ namespace Rampastring.XNAUI.XNAControls
             Text = Suggestion ?? string.Empty;
         }
 
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
         {
-            if (key == "Suggestion")
+            switch (property)
             {
-                Suggestion = value;
+                case nameof(SuggestedTextColor):
+                    if (this.TryGet(property, out Color c))
+                        SuggestedTextColor = c;
+                    return;
             }
+            base.ParseAttributeFromUIConfigurations(property, type);
+        }
 
-            base.ParseAttributeFromINI(iniFile, key, value);
+        protected override void ParseLocaleStringsFromStringManager()
+        {
+            if (!SkipParseTextFromStringManager)
+                Suggestion = GetUIString(nameof(Suggestion));
+            base.ParseLocaleStringsFromStringManager();
         }
 
         public override Color TextColor

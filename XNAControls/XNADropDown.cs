@@ -6,8 +6,6 @@ using Microsoft.Xna.Framework.Graphics;
 
 using Rampastring.Tools;
 
-using SharpDX.Direct3D9;
-
 using System;
 using System.Collections.Generic;
 
@@ -469,7 +467,7 @@ namespace Rampastring.XNAUI.XNAControls
             }
             else // if (DropDownState == DropDownState.DROPPED_UP)
             {
-                if (p.Y > ClientRectangle.Height - DropDownTexture.Height - 1)
+                if (p.Y > Height - DropDownTexture.Height - 1)
                     return -1;
 
                 itemIndex = (p.Y - 1) / ItemHeight;

@@ -38,7 +38,7 @@ namespace Rampastring.XNAUI.XNAControls
         {
             if (ScrollBar != null)
             {
-                ScrollBar.ClientRectangle = new Rectangle(Width - ScrollBar.ScrollWidth - 1,
+                ScrollBar.SetClientRectangle(Width - ScrollBar.ScrollWidth - 1,
                     1, ScrollBar.ScrollWidth, Height - 2);
                 ScrollBar.DisplayedPixelCount = Height - MARGIN * 2;
                 ScrollBar.Refresh();
@@ -247,7 +247,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         public int NumberOfLinesOnList
         {
-            get { return (ClientRectangle.Height - 4) / LineHeight; }
+            get { return (Height - 4) / LineHeight; }
         }
 
         private bool _enableScrollbar = true;
@@ -300,31 +300,28 @@ namespace Rampastring.XNAUI.XNAControls
         private bool isScrollingQuickly = false;
         private bool selectedIndexChanged = false;
 
-        public override void ParseAttributeFromINI(IniFile iniFile, string key, string value)
+        protected override void ParseAttributeFromUIConfigurations(string property, Type type)
         {
-            switch (key)
+            switch (property)
             {
                 case "EnableScrollbar":
-                    EnableScrollbar = Conversions.BooleanFromString(value, true);
+                    if (this.TryGet(property, out bool b))
+                        EnableScrollbar = b;
                     return;
                 case "DrawSelectionUnderScrollbar":
-                    DrawSelectionUnderScrollbar = Conversions.BooleanFromString(value, true);
+                    if (this.TryGet(property, out b))
+                        DrawSelectionUnderScrollbar = b;
                     return;
                 case nameof(AllowMultiLineItems):
-                    AllowMultiLineItems = Conversions.BooleanFromString(value, AllowMultiLineItems);
+                    if (this.TryGet(property, out b))
+                        AllowMultiLineItems = b;
                     return;
                 case nameof(AllowRightClickUnselect):
-                    AllowRightClickUnselect = Conversions.BooleanFromString(value, AllowRightClickUnselect);
-                    return;
-                case nameof(Font):
-                    Font = value;
-                    return;
-                case nameof(FontSize):
-                    FontSize = Conversions.IntFromString(value, 12);
+                    if (this.TryGet(property, out b))
+                        AllowRightClickUnselect = b;
                     return;
             }
-
-            base.ParseAttributeFromINI(iniFile, key, value);
+            base.ParseAttributeFromUIConfigurations(property, type);
         }
 
         public void Clear()
@@ -541,7 +538,7 @@ namespace Rampastring.XNAUI.XNAControls
             KeyboardEventInput.CharEntered += KeyboardEventInput_CharEntered;
 #endif
 
-            ScrollBar.ClientRectangle = new Rectangle(Width - ScrollBar.ScrollWidth - 1,
+            ScrollBar.SetClientRectangle(Width - ScrollBar.ScrollWidth - 1,
                 1, ScrollBar.ScrollWidth, Height - 2);
             ScrollBar.Scrolled += ScrollBar_Scrolled;
             AddChild(ScrollBar);

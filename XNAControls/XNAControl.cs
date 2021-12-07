@@ -1,13 +1,22 @@
-﻿using Microsoft.Xna.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+
+using FontStashSharp;
+
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+
 using Rampastring.Tools;
 using Rampastring.XNAUI.Input;
-using System.Collections.ObjectModel;
-using System.Linq;
-using Microsoft.Xna.Framework.Graphics;
-using FontStashSharp;
-using System.Diagnostics;
+
+using Shimakaze;
+
+// !!DO NOT USING THIS NAMESPACE!!
+// using System.Diagnostics.Tracing;
 
 namespace Rampastring.XNAUI.XNAControls
 {
@@ -15,7 +24,7 @@ namespace Rampastring.XNAUI.XNAControls
     /// The base class for a XNA-based UI control.
     /// </summary>
     [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
-    public class XNAControl : DrawableGameComponent
+    public partial class XNAControl : DrawableGameComponent
     {
         private bool _ignoreInputOnFrame = false;
         private bool _isChangingSize = false;
@@ -29,7 +38,41 @@ namespace Rampastring.XNAUI.XNAControls
         private readonly List<XNAControl> _childAddQueue = new List<XNAControl>();
         private readonly List<XNAControl> _childRemoveQueue = new List<XNAControl>();
         private readonly List<XNAControl> _children = new List<XNAControl>();
+        [Event(EventSummary = "Raised when the control's parent is changed.", PropertySummary = "Gets or sets the parent of this control.")]
         private XNAControl _parent;
+        [Event(SkipEvent = true, SkipMethod = true, MethodName = "OnClientRectangleUpdated", PropertySummary = "The X-coordinate of the control relative to its parent's location.")]
+        private int _x;
+        [Event(SkipEvent = true, SkipMethod = true, MethodName = "OnClientRectangleUpdated", PropertySummary = "The Y-coordinate of the control relative to its parent's location.")]
+        private int _y;
+        [Event(SkipEvent = true, SkipMethod = true, MethodName = "OnSizeChanged", PropertySummary = "The width of the control.")]
+        private int _width;
+        [Event(SkipEvent = true, SkipMethod = true, MethodName = "OnSizeChanged", PropertySummary = "The height of the control.")]
+        private int _height;
+        private int _scaling = 1;
+        private int _initScaling;
+
+        private KeyValuePair<string, SpriteFontBase> _fontCache = new KeyValuePair<string, SpriteFontBase>(string.Empty, null);
+        [Event]
+        private string _font;
+        [Event]
+        private int _fontSize;
+        [Event(IsVirtualProperty = true, PropertySummary = "Raised whenever the text of the text box is changed, by the user or programmatically.")]
+        protected string _text;
+
+        public int ScaledWidth => Width * Scaling;
+
+        public int ScaledHeight => Height * Scaling;
+
+        /// <summary>
+        /// Shortcut for accessing Bottom.
+        /// </summary>
+        public int Bottom => Y + Height;
+
+        /// <summary>
+        /// Shortcut for accessing Right.
+        /// </summary>
+        public int Right => X + Width;
+
 
         /// <summary>
         /// Creates a new control instance.
@@ -40,23 +83,16 @@ namespace Rampastring.XNAUI.XNAControls
             WindowManager = windowManager;
         }
 
+
         /// <summary>
         /// Holds a reference to the cursor.
         /// </summary>
-        protected Cursor Cursor
-        {
-            get { return WindowManager.Cursor; }
-        }
+        protected Cursor Cursor => WindowManager.Cursor;
 
         /// <summary>
         /// Holds a reference to the keyboard.
         /// </summary>
-        protected RKeyboard Keyboard
-        {
-            get { return WindowManager.Keyboard; }
-        }
-
-        #region Events
+        protected RKeyboard Keyboard => WindowManager.Keyboard;
 
         /// <summary>
         /// Raised when the mouse cursor enters the control's area.
@@ -124,28 +160,18 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         public event EventHandler SelectedChanged;
 
-        /// <summary>
-        /// Raised when the control's parent is changed.
-        /// </summary>
-        public event EventHandler ParentChanged;
-
-        #endregion
-
-        #region Location and size
-
-        private int _x, _y, _width, _height;
-        private int _scaling = 1;
-        private int _initScaling;
 
         /// <summary>
         /// The non-scaled display rectangle of the control inside its parent.
         /// </summary>
+        [Obsolete]
         public Rectangle ClientRectangle
         {
             get
             {
                 return new Rectangle(_x, _y, _width, _height);
             }
+
             set
             {
                 _x = value.X;
@@ -162,7 +188,26 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
+        public void SetSize(int width, int height)
+        {
+            bool isSizeChanged = width != _width || height != _height;
+            if (isSizeChanged)
+            {
+                _width = width;
+                _height = height;
+                OnSizeChanged();
+            }
+        }
+
+        public void SetPosition(int x, int y)
+        {
+            _x = x;
+            _y = y;
+            OnClientRectangleUpdated();
+        }
+
         public bool SkipParseTextFromStringManager { get; set; }
+
         public bool SkipParseFromStringManager { get; set; }
 
         /// <summary>
@@ -174,7 +219,11 @@ namespace Rampastring.XNAUI.XNAControls
             {
                 RefreshRenderTarget();
             }
+
+            OnClientRectangleUpdated();
         }
+        // Event Relay Method
+        private void OnSizeChanged(int i) => OnSizeChanged();
 
         /// <summary>
         /// Called when the control's client rectangle is changed.
@@ -183,6 +232,8 @@ namespace Rampastring.XNAUI.XNAControls
         {
             ClientRectangleUpdated?.Invoke(this, EventArgs.Empty);
         }
+        // Event Relay Method
+        private void OnClientRectangleUpdated(int i) => OnClientRectangleUpdated();
 
         private void CheckForRenderAreaChange()
         {
@@ -197,77 +248,8 @@ namespace Rampastring.XNAUI.XNAControls
             _children.ForEach(c => c.CheckForRenderAreaChange());
         }
 
-        /// <summary>
-        /// The X-coordinate of the control relative to its parent's location.
-        /// </summary>
-        public int X
-        {
-            get => _x;
-            set
-            {
-                _x = value;
-                OnClientRectangleUpdated();
-            }
-        }
 
-        /// <summary>
-        /// The Y-coordinate of the control relative to its parent's location.
-        /// </summary>
-        public int Y
-        {
-            get => _y;
-            set
-            {
-                _y = value;
-                OnClientRectangleUpdated();
-            }
-        }
 
-        /// <summary>
-        /// The width of the control.
-        /// </summary>
-        public int Width
-        {
-            get => _width;
-            set
-            {
-                _width = value;
-                OnSizeChanged();
-                OnClientRectangleUpdated();
-            }
-        }
-
-        public int ScaledWidth => Width * Scaling;
-
-        /// <summary>
-        /// The height of the control.
-        /// </summary>
-        public int Height
-        {
-            get => _height;
-            set
-            {
-                _height = value;
-                OnSizeChanged();
-                OnClientRectangleUpdated();
-            }
-        }
-
-        public int ScaledHeight => Height * Scaling;
-
-        /// <summary>
-        /// Shortcut for accessing ClientRectangle.Bottom.
-        /// </summary>
-        public int Bottom => ClientRectangle.Bottom;
-
-        /// <summary>
-        /// Shortcut for accessing ClientRectangle.Right.
-        /// </summary>
-        public int Right => ClientRectangle.Right;
-
-        #endregion
-
-        #region Public Properties
         /// <summary>
         /// Gets the window manager associated with this control.
         /// </summary>
@@ -278,20 +260,6 @@ namespace Rampastring.XNAUI.XNAControls
         /// and does not affect functionality.
         /// </summary>
         public string Name { get; set; }
-
-
-        /// <summary>
-        /// Gets or sets the parent of this control.
-        /// </summary>
-        public XNAControl Parent
-        {
-            get { return _parent; }
-            set
-            {
-                _parent = value;
-                ParentChanged?.Invoke(this, EventArgs.Empty);
-            }
-        }
 
         public XNAControl RootParent
         {
@@ -312,10 +280,11 @@ namespace Rampastring.XNAUI.XNAControls
         }
 
         /// <summary>
-        /// A read-only list of the control's children. 
+        /// A read-only list of the control's children.
         /// Call the AddChild method to add children to the control.
         /// </summary>
         public ReadOnlyCollection<XNAControl> Children => new ReadOnlyCollection<XNAControl>(_children);
+
         /// <summary>
         /// Set if the control is detached from its parent.
         /// A detached control's mouse input is handled independently
@@ -323,13 +292,16 @@ namespace Rampastring.XNAUI.XNAControls
         /// rectangle and still handle input correctly.
         /// </summary>
         public bool Detached { get; private set; } = false;
+
         public Color RemapColor { get; set; } = Color.White;
+
         public virtual float Alpha
         {
             get
             {
                 return alpha;
             }
+
             set
             {
                 if (value > 1.0f)
@@ -340,47 +312,25 @@ namespace Rampastring.XNAUI.XNAControls
                     alpha = value;
             }
         }
+
         public int CursorTextureIndex { get; set; }
 
-        public virtual string Text
-        {
-            get => _text;
-            set => OnTextChange(_text = value);
-        }
-
-        public string Font
-        {
-            get => _font;
-            set => OnFontChange(_font = value);
-        }
-
-        public int FontSize
-        {
-            get => _fontSize;
-            set => OnFontSizeChange(_fontSize = value);
-        }
-
-        protected virtual void OnTextChange(string v)
-        { }
-
-        protected virtual void OnFontChange(string v)
-        { }
-
-        protected virtual void OnFontSizeChange(int v)
-        { }
-
         public object Tag { get; set; }
+
         public bool Killed { get; set; }
+
         /// <summary>
         /// Determines whether the control should block other controls on the screen
         /// from being interacted with.
         /// </summary>
         public bool Focused { get; set; }
+
         /// <summary>
         /// Determines whether this control is able to handle input.
         /// If set to false, input management will ignore this control.
         /// </summary>
         public bool InputEnabled { get; set; } = true;
+
         /// <summary>
         /// Gets or sets a bool that determines whether this control is the current focus of the mouse cursor.
         /// </summary>
@@ -393,8 +343,13 @@ namespace Rampastring.XNAUI.XNAControls
 
                 return isActive;
             }
-            set { isActive = value; }
+
+            set
+            {
+                isActive = value;
+            }
         }
+
         public bool IgnoreInputOnFrame
         {
             get
@@ -404,11 +359,13 @@ namespace Rampastring.XNAUI.XNAControls
                 else
                     return _ignoreInputOnFrame || Parent.IgnoreInputOnFrame;
             }
+
             set
             {
                 _ignoreInputOnFrame = true;
             }
         }
+
         /// <summary>
         /// The draw mode of the control.
         /// Cannot be changed after the control's <see cref="Initialize"/>
@@ -416,7 +373,11 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         public ControlDrawMode DrawMode
         {
-            get { return drawMode; }
+            get
+            {
+                return drawMode;
+            }
+
             set
             {
                 if (IsInitialized)
@@ -428,14 +389,16 @@ namespace Rampastring.XNAUI.XNAControls
                 drawMode = value;
             }
         }
+
         /// <summary>
-        /// If set to true and the control has 
+        /// If set to true and the control has
         /// <see cref="DrawMode"/> == <see cref="ControlDrawMode.UNIQUE_RENDER_TARGET"/>,
         /// the control won't try to update its render target when its size is changed.
         /// </summary>
         public bool IsChangingSize
         {
             get => _isChangingSize || (Parent != null && Parent.IsChangingSize);
+
             set
             {
                 _isChangingSize = value;
@@ -443,9 +406,11 @@ namespace Rampastring.XNAUI.XNAControls
                     CheckForRenderAreaChange();
             }
         }
+
         public int Scaling
         {
             get => _scaling;
+
             set
             {
                 if (DrawMode != ControlDrawMode.UNIQUE_RENDER_TARGET)
@@ -468,6 +433,7 @@ namespace Rampastring.XNAUI.XNAControls
                 _scaling = value;
             }
         }
+
         /// <summary>
         /// Whether this control should allow input to pass through to controls
         /// that come after this in the control hierarchy when the control
@@ -475,10 +441,6 @@ namespace Rampastring.XNAUI.XNAControls
         /// Useful for controls that act as composite for other controls.
         /// </summary>
         public bool InputPassthrough { get; protected set; } = false;
-
-        #endregion
-
-        #region Draw helpers
 
         private Point _drawPoint;
 
@@ -593,10 +555,6 @@ namespace Rampastring.XNAUI.XNAControls
                 new Vector2(end.X + _drawPoint.X, end.Y + _drawPoint.Y), color, thickness);
         }
 
-        #endregion
-
-        #region Event Methods
-
         /// <summary>
         /// Called when the mouse cursor enters the control's client rectangle.
         /// </summary>
@@ -620,7 +578,7 @@ namespace Rampastring.XNAUI.XNAControls
         protected virtual void OnMouseRightDown() => MouseRightDown?.Invoke(this, EventArgs.Empty);
 
         /// <summary>
-        /// Called when the left mouse button has been 
+        /// Called when the left mouse button has been
         /// clicked on the control's client rectangle.
         /// </summary>
         protected virtual void OnLeftClick()
@@ -639,13 +597,13 @@ namespace Rampastring.XNAUI.XNAControls
         }
 
         /// <summary>
-        /// Called when the left mouse button has been 
+        /// Called when the left mouse button has been
         /// clicked twice on the control's client rectangle.
         /// </summary>
         protected virtual void OnDoubleLeftClick() => DoubleLeftClick?.Invoke(this, EventArgs.Empty);
 
         /// <summary>
-        /// Called when the right mouse button has been 
+        /// Called when the right mouse button has been
         /// clicked on the control's client rectangle.
         /// </summary>
         protected virtual void OnRightClick() => RightClick?.Invoke(this, EventArgs.Empty);
@@ -663,7 +621,7 @@ namespace Rampastring.XNAUI.XNAControls
         protected virtual void OnMouseOnControl() => MouseOnControl?.Invoke(this, EventArgs.Empty);
 
         /// <summary>
-        /// Called when the scroll wheel has been scrolled on the 
+        /// Called when the scroll wheel has been scrolled on the
         /// control's client rectangle.
         /// </summary>
         protected virtual void OnMouseScrolled() => MouseScrolled?.Invoke(this, EventArgs.Empty);
@@ -673,9 +631,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// control has been changed.
         /// </summary>
         public virtual void OnSelectedChanged() => SelectedChanged?.Invoke(this, EventArgs.Empty);
-        #endregion
 
-        #region Private Method
         private void DrawInternal_UniqueRenderTarget(GameTime gameTime)
         {
             if (RenderTarget == null)
@@ -741,8 +697,6 @@ namespace Rampastring.XNAUI.XNAControls
             renderRectangle,
             new Rectangle(renderRectangle.X, renderRectangle.Y, Width * totalScaling, Height * totalScaling), Color.White * Alpha);
         }
-
-        #endregion
 
         private TimeSpan timeSinceLastLeftClick = TimeSpan.Zero;
         private bool isLeftPressedOn = false;
@@ -812,24 +766,11 @@ namespace Rampastring.XNAUI.XNAControls
                 int parentTotalScaling = Parent.GetTotalScalingRecursive();
                 p = new Point(p.X * parentTotalScaling, p.Y * parentTotalScaling);
 
-#if XNA
-                return SumPoints(p, parent.GetWindowPoint());
-#else
-                return p + _parent.GetWindowPoint();
-#endif
+                return PlatformUtils.SumPoints(p, Parent.GetWindowPoint());
             }
-
 
             return p;
         }
-
-#if XNA
-        // XNA's Point is too dumb to know the plus operator
-        private Point SumPoints(Point p1, Point p2)
-        {
-            return new Point(p1.X + p2.X, p1.Y + p2.Y);
-        } 
-#endif
 
         public Point GetSizePoint()
         {
@@ -879,11 +820,8 @@ namespace Rampastring.XNAUI.XNAControls
 
                 if (Parent.DrawMode == ControlDrawMode.UNIQUE_RENDER_TARGET)
                     return p;
-#if XNA
-                return SumPoints(p, Parent.GetRenderPoint());
-#else
-                return p + Parent.GetRenderPoint();
-#endif
+
+                return PlatformUtils.SumPoints(p, Parent.GetRenderPoint());
             }
 
             return p;
@@ -900,7 +838,7 @@ namespace Rampastring.XNAUI.XNAControls
                 return;
             }
 
-            ClientRectangle = new Rectangle((Parent.Width - ScaledWidth) / 2,
+            this.SetClientRectangle((Parent.Width - ScaledWidth) / 2,
                 (Parent.Height - ScaledHeight) / 2, Width, Height);
         }
 
@@ -915,7 +853,7 @@ namespace Rampastring.XNAUI.XNAControls
                 return;
             }
 
-            ClientRectangle = new Rectangle((Parent.Width - ScaledWidth) / 2,
+            this.SetClientRectangle((Parent.Width - ScaledWidth) / 2,
                 Y, Width, Height);
         }
 
@@ -956,7 +894,7 @@ namespace Rampastring.XNAUI.XNAControls
         private List<Callback> Callbacks = new List<Callback>();
 
         /// <summary>
-        /// Schedules a delegate to be executed on the next game loop frame, 
+        /// Schedules a delegate to be executed on the next game loop frame,
         /// on the main game thread.
         /// </summary>
         /// <param name="d">The delegate.</param>
@@ -966,8 +904,6 @@ namespace Rampastring.XNAUI.XNAControls
             lock (locker)
                 Callbacks.Add(new Callback(d, args));
         }
-
-        #region Child control management
 
         /// <summary>
         /// Adds a child to the control.
@@ -1013,6 +949,7 @@ namespace Rampastring.XNAUI.XNAControls
         private void AddChildImmediate(XNAControl child)
         {
             InitChild(child);
+
             //Debug.Assert(!child.IsInitialized);
             if (!child.IsInitialized)
                 child.Initialize();
@@ -1101,24 +1038,11 @@ namespace Rampastring.XNAUI.XNAControls
             _drawList = _children.OrderBy(c => c.DrawOrder).ToList();
         }
 
-        #endregion
-
-#if DEBUG
-        private StackTrace _initStackTrace;
-#endif
-
         /// <summary>
         /// Initializes the control.
         /// </summary>
         public override void Initialize()
         {
-            //            if (IsInitialized)
-            //                throw new InvalidOperationException("重复初始化"
-            //#if DEBUG
-            //                            + ", 首次初始化" + _initStackTrace
-            //#endif
-            //                    );
-
             base.Initialize();
 
             foreach (var child in Children)
@@ -1132,9 +1056,6 @@ namespace Rampastring.XNAUI.XNAControls
 
             IsInitialized = true;
             _initScaling = _scaling;
-#if DEBUG
-            _initStackTrace = new StackTrace();
-#endif
         }
 
         public event EventHandler Initialized;
@@ -1190,6 +1111,7 @@ namespace Rampastring.XNAUI.XNAControls
         protected virtual int GetRenderTargetWidth() => Width <= 0 ? 2 : Width;
 
         protected virtual int GetRenderTargetHeight() => Height <= 0 ? 2 : Height;
+
         [Obsolete]
         public virtual void GetAttributes(IniFile iniFile)
         {
@@ -1236,6 +1158,7 @@ namespace Rampastring.XNAUI.XNAControls
             { "Location", typeof(Point) },
             { "Size", typeof(Point) }
         };
+
         [Obsolete]
         public virtual void ParseAttributeFromINI(IniFile iniFile, string key, string value)
         {
@@ -1244,81 +1167,96 @@ namespace Rampastring.XNAUI.XNAControls
                 case "DrawOrder":
                     DrawOrder = Int32.Parse(value);
                     return;
+
                 case "UpdateOrder":
                     UpdateOrder = Int32.Parse(value);
                     return;
+
                 case "Size":
                     string[] size = value.Split(',');
-                    ClientRectangle = new Rectangle(X, Y,
+                    this.SetClientRectangle(X, Y,
                         int.Parse(size[0]), int.Parse(size[1]));
                     return;
+
                 case "Width":
                     Width = int.Parse(value);
                     return;
+
                 case "Height":
                     Height = int.Parse(value);
                     return;
+
                 case "Location":
                     string[] location = value.Split(',');
-                    ClientRectangle = new Rectangle(int.Parse(location[0]), int.Parse(location[1]),
+                    this.SetClientRectangle(int.Parse(location[0]), int.Parse(location[1]),
                         Width, Height);
                     return;
+
                 case "X":
                     X = int.Parse(value);
                     return;
+
                 case "Y":
                     Y = int.Parse(value);
                     return;
+
                 case "RemapColor":
                     string[] colors = value.Split(',');
                     RemapColor = AssetLoader.GetColorFromString(value);
                     return;
+
                 case "Text":
                     Text = value.Replace("@", Environment.NewLine);
                     return;
+
                 case "Visible":
                     Visible = Conversions.BooleanFromString(value, true);
                     Enabled = Visible;
                     return;
+
                 case "Enabled":
                     Enabled = Conversions.BooleanFromString(value, true);
                     return;
+
                 case "DistanceFromRightBorder":
                     if (Parent != null)
                     {
-                        ClientRectangle = new Rectangle(Parent.Width - Width - Conversions.IntFromString(value, 0), Y,
+                        this.SetClientRectangle(Parent.Width - Width - Conversions.IntFromString(value, 0), Y,
                             Width, Height);
                     }
                     return;
+
                 case "DistanceFromBottomBorder":
                     if (Parent != null)
                     {
-                        ClientRectangle = new Rectangle(X, Parent.Height - Height - Conversions.IntFromString(value, 0),
+                        this.SetClientRectangle(X, Parent.Height - Height - Conversions.IntFromString(value, 0),
                             Width, Height);
                     }
                     return;
+
                 case "FillWidth":
                     if (Parent != null)
                     {
-                        ClientRectangle = new Rectangle(X, Y,
+                        this.SetClientRectangle(X, Y,
                             Parent.Width - X - Conversions.IntFromString(value, 0), Height);
                     }
                     else
                     {
-                        ClientRectangle = new Rectangle(X, Y,
+                        this.SetClientRectangle(X, Y,
                             WindowManager.RenderResolutionX - X - Conversions.IntFromString(value, 0),
                             Height);
                     }
                     return;
+
                 case "FillHeight":
                     if (Parent != null)
                     {
-                        ClientRectangle = new Rectangle(X, Y,
+                        this.SetClientRectangle(X, Y,
                             Width, Parent.Height - Y - Conversions.IntFromString(value, 0));
                     }
                     else
                     {
-                        ClientRectangle = new Rectangle(X, Y,
+                        this.SetClientRectangle(X, Y,
                             Width, WindowManager.RenderResolutionY - Y - Conversions.IntFromString(value, 0));
                     }
                     return;
@@ -1414,7 +1352,7 @@ namespace Rampastring.XNAUI.XNAControls
                     {
                         child.IsActive = true;
                         activeChild = child;
-                        WindowManager.activeControlName = child.Name;
+                        WindowManager.SetActiveControl(child);
                         break;
                     }
                 }
@@ -1537,7 +1475,6 @@ namespace Rampastring.XNAUI.XNAControls
             }
         }
 
-
         /// <summary>
         /// Draws the control and its child controls.
         /// </summary>
@@ -1574,58 +1511,63 @@ namespace Rampastring.XNAUI.XNAControls
                         Enabled = b;
                     }
                     return;
+
                 case nameof(DrawOrder):
                     if (this.TryGet(property, out int i))
                         DrawOrder = i;
                     return;
+
                 case nameof(Enabled):
                     if (this.TryGet(property, out b))
                         Enabled = b;
                     return;
+
                 case nameof(UpdateOrder):
                     if (this.TryGet(property, out i))
                         UpdateOrder = i;
                     return;
+
                 case nameof(FontSize):
                     if (this.TryGet(property, out i))
                         FontSize = i;
                     return;
+
                 case nameof(X):
                     if (this.TryGet(property, out i))
                         X = i;
                     return;
+
                 case nameof(Y):
                     if (this.TryGet(property, out i))
                         Y = i;
                     return;
+
                 case nameof(Width):
                     if (this.TryGet(property, out i))
                         Width = i;
                     return;
+
                 case nameof(Height):
                     if (this.TryGet(property, out i))
                         Height = i;
                     return;
+
+                case "Position":
                 case "Location":
                     if (this.TryGet(property, out Point point))
-                    {
-                        X = point.X;
-                        Y = point.Y;
-                    }
+                        this.SetPosition(ref point);
                     return;
+
                 case "Size":
                     if (this.TryGet(property, out point))
-                    {
-                        Width = point.X;
-                        Height = point.Y;
-                    }
+                        this.SetSize(ref point);
                     return;
             }
         }
 
-
         protected string GetUIString(string property, string prefix = "UI")
             => StringManager.GetString(string.Join(".", new[] { prefix, Name, property }));
+
         protected string GetUIStringEx(string property, string prefix = "UI")
         {
             string origin = string.Join(".", new[] { prefix, Name, property });
@@ -1661,20 +1603,16 @@ namespace Rampastring.XNAUI.XNAControls
 
             if (int.TryParse(GetUIStringEx(nameof(FontSize)), out var i))
                 FontSize = i;
-
         }
-        private (string info, SpriteFontBase font) _fontCache = (string.Empty, null);
-        private string _font;
-        private int _fontSize;
-        protected string _text;
+
 
         public virtual SpriteFontBase GetFont()
         {
             var key = $"{Font}:{FontSize}";
-            if (key != _fontCache.info)
-                _fontCache = (key, GetFont(Font, FontSize));
+            if (key != _fontCache.Key)
+                _fontCache = new KeyValuePair<string, SpriteFontBase>(key, GetFont(Font, FontSize));
 
-            return _fontCache.font;
+            return _fontCache.Value;
         }
 
         public static SpriteFontBase GetFont(string font, int size) => AssetLoader.FontManager[font].GetFont(size);

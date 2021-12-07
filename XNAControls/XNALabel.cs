@@ -4,8 +4,6 @@ using Microsoft.Xna.Framework;
 
 using Rampastring.Tools;
 
-using SharpDX.Direct3D9;
-
 using System;
 
 namespace Rampastring.XNAUI.XNAControls
@@ -52,9 +50,9 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         public LabelTextAnchorInfo TextAnchor { get; set; }
 
-        protected override void OnTextChange(string v)
+        protected override void OnTextChanged(string v)
         {
-            base.OnTextChange(v);
+            base.OnTextChanged(v);
             RefreshClientRectangle();
         }
 
@@ -67,18 +65,18 @@ namespace Rampastring.XNAUI.XNAControls
                 switch (TextAnchor)
                 {
                     case LabelTextAnchorInfo.CENTER:
-                        ClientRectangle = new Rectangle((int)(AnchorPoint.X - textSize.X / 2),
+                        this.SetClientRectangle((int)(AnchorPoint.X - textSize.X / 2),
                             (int)(AnchorPoint.Y - textSize.Y / 2), (int)textSize.X, (int)textSize.Y);
                         break;
                     case LabelTextAnchorInfo.RIGHT:
-                        ClientRectangle = new Rectangle((int)AnchorPoint.X, (int)AnchorPoint.Y, (int)textSize.X, (int)textSize.Y);
+                        this.SetClientRectangle((int)AnchorPoint.X, (int)AnchorPoint.Y, (int)textSize.X, (int)textSize.Y);
                         break;
                     case LabelTextAnchorInfo.LEFT:
-                        ClientRectangle = new Rectangle((int)(AnchorPoint.X - textSize.X),
+                        this.SetClientRectangle((int)(AnchorPoint.X - textSize.X),
                             (int)AnchorPoint.Y, (int)textSize.X, (int)textSize.Y);
                         break;
                     case LabelTextAnchorInfo.NONE:
-                        ClientRectangle = new Rectangle(X, Y, (int)textSize.X, (int)textSize.Y);
+                        this.SetClientRectangle(X, Y, (int)textSize.X, (int)textSize.Y);
                         break;
                 }
             }
