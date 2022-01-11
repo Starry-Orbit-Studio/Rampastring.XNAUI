@@ -73,6 +73,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// </summary>
         public int Right => X + Width;
 
+        public bool SkipUIPath { get; set; } = false;
 
         /// <summary>
         /// Creates a new control instance.
@@ -1138,9 +1139,16 @@ namespace Rampastring.XNAUI.XNAControls
             IsChangingSize = false;
         }
 
+        private bool _isAttributesGetted = false;
         public virtual void GetAttributes()
         {
-            var properties = GetType().GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public).Where(i => i.CanWrite).ToArray();
+            if(_isAttributesGetted)
+            {
+                Logger.Debug($"重复调用 GetAttributes(), {new StackTrace()}");
+                return;
+            }
+            // TODO: 改用Source Generator以提高性能
+            var properties = GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(i => i.CanWrite).ToArray();
             foreach (var property in properties)
                 ParseAttributeFromUIConfigurations(property.Name, property.PropertyType);
 
@@ -1162,7 +1170,9 @@ namespace Rampastring.XNAUI.XNAControls
         protected Dictionary<string, Type> VirtualProperties { get; } = new Dictionary<string, Type>
         {
             { "Location", typeof(Point) },
-            { "Size", typeof(Point) }
+            { "Size", typeof(Point) },
+            { "Right", typeof(int) },
+            { nameof(Bottom), typeof(int) },
         };
 
         [Obsolete]
@@ -1567,6 +1577,28 @@ namespace Rampastring.XNAUI.XNAControls
                 case "Size":
                     if (this.TryGet(property, out point))
                         this.SetSize(ref point);
+                    return;
+                case nameof(Right):
+                    if (Parent is null)
+                    {
+                        Logger.Warn($"{Name} : {GetType().FullName}: This control uses the property \"Right\", but its parent control is not set.");
+                        return;
+                    }
+                    else if (this.TryGet(property, out i))
+                    {
+                        X = Parent.Width - Width - i;
+                    }
+                    return;
+                case nameof(Bottom):
+                    if (Parent is null)
+                    {
+                        Logger.Warn($"{Name} : {GetType().FullName}: This control uses the property \"Right\", but its parent control is not set.");
+                        return;
+                    }
+                    else if (this.TryGet(property, out i))
+                    {
+                        Y = Parent.Height - Height - i;
+                    }
                     return;
             }
         }

@@ -35,9 +35,9 @@ namespace Rampastring.XNAUI
         {
             if ((_dictionary != null && _dictionary.TryGetValue(key, out string value))
                 || (_failbackDictionary != null && _failbackDictionary.TryGetValue(key, out value)))
-                if(!string.IsNullOrEmpty(value))
+                if (value != null)
                     return value;
-            Logger.Warn($"Cannot load {key}");
+            Logger.Debug($"Cannot load {key}");
             return key;
         }
         /// <summary>

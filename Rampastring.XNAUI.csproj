@@ -1,11 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework Condition="'$(Platform)'!='XNAFramework'">net45</TargetFramework>
-    <TargetFramework Condition="'$(Platform)'=='XNAFramework'">net40</TargetFramework>
+    <TargetFrameworks>net45</TargetFrameworks>
+    <TargetFrameworks Condition="'$(Engine)'=='XNA'">net40;$(TargetFrameworks)</TargetFrameworks>
     <Version>2.1.1</Version>
     <OutputPath>bin/$(Configuration)/$(Platform)</OutputPath>
-    <Platforms>Windows;WindowsGL;XNAFramework;FNA</Platforms>
     <Authors>Rampastring &amp; frg2089</Authors>
     <Description>Rampastring XNA/MonoGame UI Library</Description>
     <Copyright>Copyright © Rami '$(Authors)' Pasanen 2016-$([System.DateTime]::Now.Year)</Copyright>
@@ -17,39 +16,28 @@
     <PackageVersion>$(Version)-$(Platform)</PackageVersion>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <UseWindowsForms Condition="'$(Platform)'!='FNA'">true</UseWindowsForms>
-    <DefineConstants Condition="'$(Platform)'=='WindowsGL'">$(DefineConstants);WINDOWSGL</DefineConstants>
-    <DefineConstants Condition="'$(Platform)'=='XNAFramework'">$(DefineConstants);XNA</DefineConstants>
-    <DefineConstants Condition="'$(Platform)'=='FNA'">$(DefineConstants);FNA</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
-    <Compile Condition="'$(Platform)'=='FNA'" Remove="PlatformSpecific\WindowsGameWindowManager.cs" />
-    <Compile Condition="'$(Platform)'!='FNA'" Remove="PlatformSpecific\FNAGameWindowManager.cs" />
+    <Compile Condition="'$(Engine)'=='FNA'" Remove="PlatformSpecific\WindowsGameWindowManager.cs" />
+    <Compile Condition="'$(Engine)'!='FNA'" Remove="PlatformSpecific\FNAGameWindowManager.cs" />
     <None Include="..\..\README.md" Pack="true" PackagePath="" />
     <None Include="..\..\LICENSE.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildProjectDirectory)\..\build\Framework.props" />
+  <Import Project=" $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\configs\Engines\Common.props')) " />
 
   <ItemGroup>
     <PackageReference Include="Portable.System.ValueTuple" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FontStashSharp\src\XNA\FontStashSharp.csproj" />
-    <ProjectReference Include="..\MonoGame.IMEHelper\MonoGame.IMEHelper.csproj" />
-    <ProjectReference Include="..\Rampastring.Tools\Rampastring.Tools.csproj" />
+    <Reference Include="FontStashSharp" HintPath="$(MSBuildThisFileDirectory)..\..\build\FontStashSharp\$(Engine)\$(TargetFramework)\FontStashSharp.dll" />
+    <Reference Include="MonoGame.IMEHelper" HintPath="$(MSBuildThisFileDirectory)..\..\build\MonoGame.IMEHelper\$(Engine)\$(TargetFramework)\MonoGame.IMEHelper.dll" />
+    <Reference Include="Rampastring.Tools" HintPath="$(MSBuildThisFileDirectory)..\..\build\Rampastring.Tools\$(Configuration)\net40\Rampastring.Tools.dll" />
   </ItemGroup>
 
   <ItemGroup>
-    <Analyzer Include="..\Shimakaze.Analyzers\bin\$(Platform)\$(Configuration)\netstandard2.0\Shimakaze.Analyzers.dll" />
+    <Analyzer Include="$(MSBuildThisFileDirectory)..\..\build\Shimakaze.Analyzers\$(Configuration)\netstandard2.0\Shimakaze.Analyzers.dll" />
   </ItemGroup>
-
-  <Target Name="BuildAnalyzers" BeforeTargets="CoreCompile">
-    <MSBuild Targets="Build" Projects="..\Shimakaze.Analyzers\Shimakaze.Analyzers.csproj" />
-  </Target>
 
   <ItemGroup>
     <Folder Include="Data\Fonts\" />

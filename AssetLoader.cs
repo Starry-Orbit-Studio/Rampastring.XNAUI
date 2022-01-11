@@ -318,10 +318,10 @@ namespace Rampastring.XNAUI
                 {
                     int color = Convert.ToInt32(colorString.TrimStart('#'), 16);
                     return new Color(
-                        alpha: (color & 0xFF000000) >> 24,
-                            r: (color & 0x00FF0000) >> 16,
-                            g: (color & 0x0000FF00) >> 8,
-                            b: (color & 0x000000FF) >> 0);
+                        (color & 0x00FF0000) >> 16,
+                        (color & 0x0000FF00) >> 8,
+                        (color & 0x000000FF) >> 0,
+                        (color & 0xFF000000) >> 24);
                 }
                 else
                 {

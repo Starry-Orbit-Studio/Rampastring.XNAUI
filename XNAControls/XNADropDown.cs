@@ -301,7 +301,7 @@ namespace Rampastring.XNAUI.XNAControls
 
             if (property.StartsWith("Option"))
             {
-                if (this.TryGet(property, out var s))
+                if (this.TryGet(property, out string s))
                     AddItem(s);
                 return;
             }

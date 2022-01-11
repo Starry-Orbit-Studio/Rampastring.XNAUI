@@ -12,6 +12,7 @@ using System.Linq;
 using System.Reflection;
 
 using static System.Net.Mime.MediaTypeNames;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace Rampastring.XNAUI.XNAControls
 {
@@ -142,6 +143,30 @@ namespace Rampastring.XNAUI.XNAControls
                     return;
             }
 
+            if (property.StartsWith("DefaultTab"))
+            {
+                switch (property.Substring(10))
+                {
+                    case nameof(Tab.DefaultTexture):
+                        if (this.TryGet(property, out Texture2D t))
+                        {
+                            Tabs.ForEach(tab =>
+                            {
+                                tab.DefaultTexture = t;
+                                tab.RePositionText(GetFont());
+                                if (Height != tab.DefaultTexture.Height)
+                                    Height = tab.DefaultTexture.Height;
+                            });
+                        }
+                        return;
+                    case nameof(Tab.PressedTexture):
+                        if (this.TryGet(property, out t))
+                            Tabs.ForEach(tab => tab.PressedTexture = t);
+                        return;
+                }
+            }
+
+            // TODO: 属性需要调整
             if (property.StartsWith("RemoveTabIndex"))
             {
                 int index = int.Parse(property.Substring(14));
@@ -156,50 +181,24 @@ namespace Rampastring.XNAUI.XNAControls
                     switch (property.Substring(4))
                     {
                         case nameof(Tab.Text):
-                            if (this.TryGet(property, out var str))
+                            if (this.TryGet(property, out string str))
                                 tab.Text = str;
                             return;
                         case nameof(Tab.DefaultTexture):
                             if (this.TryGet(property, out Texture2D t))
                             {
                                 tab.DefaultTexture = t;
-                                Vector2 textSize = Renderer.GetTextDimensions(tab.Text, GetFont());
-                                tab.TextXPosition = (tab.DefaultTexture.Width - (int)textSize.X) / 2;
-                                tab.TextYPosition = (tab.DefaultTexture.Height - (int)textSize.Y) / 2;
+                                tab.RePositionText(GetFont());
                                 if (Height != tab.DefaultTexture.Height)
                                     Height = tab.DefaultTexture.Height;
                             }
-                                return;
+                            return;
                         case nameof(Tab.PressedTexture):
                             if (this.TryGet(property, out t))
                                 tab.PressedTexture = t;
                             return;
                     }
                 }
-            }
-            else if (property.StartsWith("DefaultTab"))
-            {
-                Tabs.ForEach(tab =>
-                {
-                    switch (property.Substring(10))
-                    {
-                        case nameof(Tab.DefaultTexture):
-                            if (this.TryGet(property, out Texture2D t))
-                            {
-                                tab.DefaultTexture = t;
-                                Vector2 textSize = Renderer.GetTextDimensions(tab.Text, GetFont());
-                                tab.TextXPosition = (tab.DefaultTexture.Width - (int)textSize.X) / 2;
-                                tab.TextYPosition = (tab.DefaultTexture.Height - (int)textSize.Y) / 2;
-                                if (Height != tab.DefaultTexture.Height)
-                                    Height = tab.DefaultTexture.Height;
-                            }
-                            return;
-                        case nameof(Tab.PressedTexture):
-                            if (this.TryGet(property, out t))
-                                tab.PressedTexture = t;
-                            return;
-                    }
-                });
             }
 
             base.ParseAttributeFromUIConfigurations(property, type);
@@ -283,5 +282,14 @@ namespace Rampastring.XNAUI.XNAControls
         public int TextXPosition { get; set; }
 
         public int TextYPosition { get; set; }
+    }
+    static class TabExtensions
+    {
+        public static void RePositionText(this Tab tab, SpriteFontBase font)
+        {
+            Vector2 textSize = Renderer.GetTextDimensions(tab.Text, font);
+            tab.TextXPosition = (tab.DefaultTexture.Width - (int)textSize.X) / 2;
+            tab.TextYPosition = (tab.DefaultTexture.Height - (int)textSize.Y) / 2;
+        }
     }
 }

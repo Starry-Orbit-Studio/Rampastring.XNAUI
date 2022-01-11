@@ -72,7 +72,7 @@ namespace Rampastring.XNAUI.XNAControls
                     return;
                 case "DrawMode":
                 case nameof(PanelBackgroundDrawMode):
-                    if (this.TryGet(property, out var value))
+                    if (this.TryGet(property, out string value))
                     {
                         if (value == "Tiled")
                             PanelBackgroundDrawMode = PanelBackgroundImageDrawMode.TILED;
@@ -99,7 +99,7 @@ namespace Rampastring.XNAUI.XNAControls
                         DrawBorders = b;
                     return;
                 case "Padding":
-                    if (this.TryGet(property, out var s))
+                    if (this.TryGet(property, out string s))
                     {
                         string[] parts = s.Split(',');
                         int left = int.Parse(parts[0]);

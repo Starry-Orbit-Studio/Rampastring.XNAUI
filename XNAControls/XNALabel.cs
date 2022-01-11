@@ -125,7 +125,7 @@ namespace Rampastring.XNAUI.XNAControls
                         AnchorPoint = new Vector2(p.X, p.Y);
                     return;
                 case nameof(TextAnchor):
-                    if (this.TryGet(property, out var s)
+                    if (this.TryGet(property, out string s)
                         && Enum.TryParse(s, out LabelTextAnchorInfo info))
                         TextAnchor = info;
                     return;
