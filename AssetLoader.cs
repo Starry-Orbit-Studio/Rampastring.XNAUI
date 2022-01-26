@@ -1,19 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Drawing;
-using Microsoft.Xna.Framework.Audio;
-using Microsoft.Xna.Framework.Graphics;
-using Rampastring.Tools;
-using Color = Microsoft.Xna.Framework.Color;
-using Microsoft.Xna.Framework.Content;
-using Microsoft.Xna.Framework.Media;
-using System.Linq;
 using System.Drawing.Text;
-using System.Text;
 using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
 using FontStashSharp;
+using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Content;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Media;
+using Rampastring.Tools;
 using Rampastring.XNAUI.Data;
+using Color = Microsoft.Xna.Framework.Color;
 
 namespace Rampastring.XNAUI
 {
@@ -68,12 +68,12 @@ namespace Rampastring.XNAUI
         /// <returns>The texture if it was found and could be loaded, otherwise a dummy texture.</returns>
         public static Texture2D LoadTexture(string name)
         {
-            Logger.Debug($"Try Load \"{name}\"");
+            Logger.Debug($"❓Try Load \"{name}\".");
             Texture2D texture = null;
 
             if ((texture = textureCache.FirstOrDefault(x => x.Name == name)) != null)
             {
-                Logger.Debug($"Find \"{name}\" from cache");
+                Logger.Debug($"✔️Find \"{name}\" from cache.");
                 return texture;
             }
 
@@ -88,7 +88,7 @@ namespace Rampastring.XNAUI
         /// <returns>The texture if it was found and could be loaded, otherwise a dummy texture.</returns>
         public static Texture2D LoadTextureUncached(string name)
         {
-            Logger.Debug($"Try Load \"{name}\" Uncached");
+            Logger.Debug($"  Try Load \"{name}\" without cache.");
             var texture = LoadTextureInternal(name);
             if (texture != null)
             {
@@ -96,7 +96,6 @@ namespace Rampastring.XNAUI
                 return texture;
             }
 
-            Logger.Debug($"WARN: Cannot Find \"{name}\"!");
             return CreateDummyTexture();
         }
 
@@ -109,7 +108,7 @@ namespace Rampastring.XNAUI
                     //Logger.Debug($"Search \"{name}\" in \"{searchPath}\"");
                     if (File.Exists(Path.Combine(searchPath, name)))
                     {
-                        Logger.Debug($"Find \"{name}\" from \"{searchPath}\"");
+                        Logger.Debug($"✔️Success to load \"{name}\" from \"{searchPath}\".");
                         using (FileStream fs = File.OpenRead(Path.Combine(searchPath, name)))
                         {
                             Texture2D texture = Texture2D.FromStream(graphicsDevice, fs);
@@ -123,7 +122,7 @@ namespace Rampastring.XNAUI
             }
             catch (Exception ex)
             {
-                Logger.Log("AssetLoader.LoadTextureInternal: loading texture " + name + " failed! Message: " + ex.Message);
+                Logger.Warn("AssetLoader.LoadTextureInternal: loading texture " + name + " failed! Message: " + ex.Message);
             }
 
             return null;
@@ -149,6 +148,7 @@ namespace Rampastring.XNAUI
         /// </summary>
         private static Texture2D CreateDummyTexture()
         {
+            Logger.Debug($"⚠️Using Dummy Texture.");
             return CreateTexture(new Color(255, 54, 244), 100, 100);
         }
 
@@ -159,13 +159,19 @@ namespace Rampastring.XNAUI
         /// <returns></returns>
         public static bool AssetExists(string name)
         {
-            Logger.Debug($"Try Find \"{name}\"");
+            Logger.Debug($"❓Try Find \"{name}\".");
             foreach (string searchPath in AssetSearchPaths)
             {
-                if (File.Exists(Path.Combine(searchPath, name)))
+                var path = Path.Combine(searchPath, name);
+                //Logger.Debug($"   Try to find \"{path}\"");
+                if (File.Exists(path))
+                {
+                    Logger.Debug($"✔️Success to find \"{path}\".");
                     return true;
+                }
             }
 
+            Logger.Debug($"❌Not Found. \"{name}\".");
             return false;
         }
 
@@ -193,17 +199,17 @@ namespace Rampastring.XNAUI
         {
             var key = $"{width}:{height}#{color.A:X2}{color.R:X2}{color.G:X2}{color.B:X2}";
 
-            Logger.Debug($"Try Load \"{key}\"");
+            Logger.Debug($"❓Try Load Color Texture \"{key}\"");
 
             Texture2D texture = null;
 
             if ((texture = textureCache.FirstOrDefault(x => x.Name == key)) != null)
             {
-                Logger.Debug($"Find \"{key}\" from cache");
+                Logger.Debug($"✔️Find \"{key}\" from cache");
                 return texture;
             }
 
-            Logger.Debug($"Create \"{key}\"");
+            Logger.Debug($"✨Create \"{key}\"");
 
             texture = new Texture2D(graphicsDevice, width, height, false, SurfaceFormat.Color) { Name = key };
 

@@ -1,9 +1,7 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-
 using Rampastring.Tools;
-
-using System;
 
 namespace Rampastring.XNAUI.XNAControls
 {
@@ -35,6 +33,7 @@ namespace Rampastring.XNAUI.XNAControls
 
         public bool DrawBorders { get; set; } = true;
 
+        public bool SkipParseBackgroundTextureFromUISettings { get; set; } = false;
         /// <summary>
         /// If this is set, the XNAPanel will render itself on a separate render target.
         /// After the rendering is complete, it'll set this render target to be the
@@ -87,6 +86,8 @@ namespace Rampastring.XNAUI.XNAControls
                         AlphaRate = f;
                     return;
                 case nameof(BackgroundTexture):
+                    if (SkipParseBackgroundTextureFromUISettings)
+                        return;
                     if (this.TryGet(property, out Texture2D t))
                     {
                         BackgroundTexture = t;

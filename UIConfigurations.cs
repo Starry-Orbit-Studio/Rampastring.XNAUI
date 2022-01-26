@@ -413,6 +413,7 @@ namespace Rampastring.XNAUI
                         Logger.Debug($"[UIConf]   Loading path is \"{string.Join(".", uiNames.Reverse())}\" .");
                         return (status, value);
                     }
+                    Logger.Debug($"[UIConf]   Tring to load from \"{string.Join(".", uiNames.Reverse())}\" .");
                 }
 
             End:

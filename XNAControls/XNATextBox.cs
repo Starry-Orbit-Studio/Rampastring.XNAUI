@@ -34,6 +34,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// <param name="windowManager">The WindowManager that will be associated with this control.</param>
         public XNATextBox(WindowManager windowManager) : base(windowManager)
         {
+            SkipParseTextFromStringManager = true;
             if (WindowManager.IMEHandler == null)
                 return;
 
@@ -603,9 +604,14 @@ namespace Rampastring.XNAUI.XNAControls
                     WindowManager.IMEHandler?.StopTextComposition();
             }
 
-            DrawStringWithShadow(Text.Substring(TextStartPosition, TextEndPosition - TextStartPosition),
-                font, new Vector2(TEXT_HORIZONTAL_MARGIN, TEXT_VERTICAL_MARGIN),
-                TextColor);
+            if (Text != null)
+            {
+                DrawStringWithShadow(
+                    Text.Substring(TextStartPosition, TextEndPosition - TextStartPosition),
+                    font,
+                    new Vector2(TEXT_HORIZONTAL_MARGIN, TEXT_VERTICAL_MARGIN),
+                    TextColor);
+            }
 
             if (WindowManager.IMEHandler?.Composition.Length == 0 &&
                 WindowManager.SelectedControl == this &&

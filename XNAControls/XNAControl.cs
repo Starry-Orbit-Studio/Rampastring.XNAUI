@@ -40,13 +40,13 @@ namespace Rampastring.XNAUI.XNAControls
         private readonly List<XNAControl> _children = new List<XNAControl>();
         [Event(EventSummary = "Raised when the control's parent is changed.", PropertySummary = "Gets or sets the parent of this control.")]
         private XNAControl _parent;
-        [Event(SkipEvent = true, SkipMethod = true, MethodName = "OnClientRectangleUpdated", PropertySummary = "The X-coordinate of the control relative to its parent's location.")]
+        [Event(SkipMethod = true, MethodName = "OnClientRectangleUpdated", PropertySummary = "The X-coordinate of the control relative to its parent's location.")]
         private int _x;
-        [Event(SkipEvent = true, SkipMethod = true, MethodName = "OnClientRectangleUpdated", PropertySummary = "The Y-coordinate of the control relative to its parent's location.")]
+        [Event(SkipMethod = true, MethodName = "OnClientRectangleUpdated", PropertySummary = "The Y-coordinate of the control relative to its parent's location.")]
         private int _y;
-        [Event(SkipEvent = true, SkipMethod = true, MethodName = "OnSizeChanged", PropertySummary = "The width of the control.")]
+        [Event(SkipMethod = true, MethodName = "OnSizeChanged", PropertySummary = "The width of the control.")]
         private int _width;
-        [Event(SkipEvent = true, SkipMethod = true, MethodName = "OnSizeChanged", PropertySummary = "The height of the control.")]
+        [Event(SkipMethod = true, MethodName = "OnSizeChanged", PropertySummary = "The height of the control.")]
         private int _height;
         private int _scaling = 1;
         private int _initScaling;
@@ -284,7 +284,7 @@ namespace Rampastring.XNAUI.XNAControls
         /// A read-only list of the control's children.
         /// Call the AddChild method to add children to the control.
         /// </summary>
-        public ReadOnlyCollection<XNAControl> Children => new ReadOnlyCollection<XNAControl>(_children);
+        public IReadOnlyCollection<XNAControl> Children => _children.AsReadOnly();
 
         /// <summary>
         /// Set if the control is detached from its parent.

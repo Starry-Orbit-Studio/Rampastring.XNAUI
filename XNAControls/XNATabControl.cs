@@ -1,16 +1,12 @@
-﻿using FontStashSharp;
-
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Audio;
-using Microsoft.Xna.Framework.Graphics;
-
-using Rampastring.Tools;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-
+using FontStashSharp;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Graphics;
+using Rampastring.Tools;
 using static System.Net.Mime.MediaTypeNames;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
@@ -150,10 +146,11 @@ namespace Rampastring.XNAUI.XNAControls
                     case nameof(Tab.DefaultTexture):
                         if (this.TryGet(property, out Texture2D t))
                         {
+                            var font = GetFont();
                             Tabs.ForEach(tab =>
                             {
                                 tab.DefaultTexture = t;
-                                tab.RePositionText(GetFont());
+                                tab.RePositionText(font);
                                 if (Height != tab.DefaultTexture.Height)
                                     Height = tab.DefaultTexture.Height;
                             });
@@ -202,6 +199,16 @@ namespace Rampastring.XNAUI.XNAControls
             }
 
             base.ParseAttributeFromUIConfigurations(property, type);
+        }
+
+        protected override void ParseLocaleStringsFromStringManager()
+        {
+            base.ParseLocaleStringsFromStringManager();
+            var font = GetFont();
+            Tabs.ForEach(tab =>
+            {
+                tab.RePositionText(font);
+            });
         }
 
         protected override void OnLeftClick()
@@ -287,6 +294,8 @@ namespace Rampastring.XNAUI.XNAControls
     {
         public static void RePositionText(this Tab tab, SpriteFontBase font)
         {
+            if (tab.DefaultTexture == null)
+                return;
             Vector2 textSize = Renderer.GetTextDimensions(tab.Text, font);
             tab.TextXPosition = (tab.DefaultTexture.Width - (int)textSize.X) / 2;
             tab.TextYPosition = (tab.DefaultTexture.Height - (int)textSize.Y) / 2;
