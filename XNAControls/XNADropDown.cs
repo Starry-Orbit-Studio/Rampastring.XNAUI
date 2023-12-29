@@ -124,17 +124,6 @@ public class XNADropDown : XNAControl
         set { _focusColor = value; }
     }
 
-    private Color? _backColor;
-
-    public Color BackColor
-    {
-        get
-        {
-            return _backColor ?? UISettings.ActiveSettings.BackgroundColor;
-        }
-        set { _backColor = value; }
-    }
-
     private Color? _textColor;
 
     public Color TextColor
@@ -164,6 +153,9 @@ public class XNADropDown : XNAControl
 
     public Texture2D DropDownTexture { get; set; }
     public Texture2D DropDownOpenTexture { get; set; }
+
+    public Texture2D BackgroundTexture { get; set; }
+    public Texture2D ItemBackgroundTexture {  get; set; }
 
     public EnhancedSoundEffect ClickSoundEffect { get; set; }
 
@@ -248,6 +240,12 @@ public class XNADropDown : XNAControl
             case "DropDownOpenTexture":
                 DropDownOpenTexture = AssetLoader.LoadTextureUncached(value);
                 return;
+            case "BackgroundTexture":
+                BackgroundTexture = AssetLoader.LoadTextureUncached(value);
+                return;
+            case "ItemBackgroundTexture":
+                ItemBackgroundTexture = AssetLoader.LoadTextureUncached(value);
+                return;
             case "ItemHeight":
                 ItemHeight = Conversions.IntFromString(value, ItemHeight);
                 return;
@@ -264,7 +262,9 @@ public class XNADropDown : XNAControl
                 FocusColor = AssetLoader.GetRGBAColorFromString(value);
                 return;
             case "BackColor":
-                BackColor = AssetLoader.GetRGBAColorFromString(value);
+                Color backcolor = AssetLoader.GetRGBAColorFromString(value);
+                BackgroundTexture = AssetLoader.CreateTexture(backcolor, Width, Height);
+                ItemBackgroundTexture = AssetLoader.CreateTexture(backcolor, Width, Height);
                 return;
             case "DisabledItemColor":
                 DisabledItemColor = AssetLoader.GetColorFromString(value);
@@ -454,6 +454,8 @@ public class XNADropDown : XNAControl
     /// </summary>
     public override void Draw(GameTime gameTime)
     {
+        DrawTexture(BackgroundTexture, new Rectangle(0, 0, Width, Height), Color.White);
+
         Rectangle dropDownRect;
         if (DropDownState == DropDownState.CLOSED)
             dropDownRect = new Rectangle(0, 0, Width, Height);
@@ -462,8 +464,6 @@ public class XNADropDown : XNAControl
         else
             dropDownRect = new Rectangle(0, Height - DropDownTexture.Height, Width, DropDownTexture.Height);
 
-        FillRectangle(new Rectangle(dropDownRect.X + 1, dropDownRect.Y + 1,
-            dropDownRect.Width - 2, dropDownRect.Height - 2), BackColor);
         DrawRectangle(dropDownRect, BorderColor);
 
         if (SelectedIndex > -1 && SelectedIndex < Items.Count)
@@ -536,7 +536,7 @@ public class XNADropDown : XNAControl
         }
         else
         {
-            FillRectangle(new Rectangle(1, y, Width - 2, ItemHeight), BackColor);
+            DrawTexture(ItemBackgroundTexture, new Rectangle(1, y, Width - 2, ItemHeight), Color.White);
         }
 
         int textX = 2;
