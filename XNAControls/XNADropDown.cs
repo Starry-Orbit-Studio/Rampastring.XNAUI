@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Rampastring.Tools;
 using System;
@@ -264,7 +264,10 @@ public class XNADropDown : XNAControl
             case "BackColor":
                 Color backcolor = AssetLoader.GetRGBAColorFromString(value);
                 BackgroundTexture = AssetLoader.CreateTexture(backcolor, Width, Height);
-                ItemBackgroundTexture = AssetLoader.CreateTexture(backcolor, Width, Height);
+                return;
+            case "ItemBackColor":
+                Color itembackcolor = AssetLoader.GetRGBAColorFromString(value);
+                ItemBackgroundTexture = AssetLoader.CreateTexture(itembackcolor, Width, Height);
                 return;
             case "DisabledItemColor":
                 DisabledItemColor = AssetLoader.GetColorFromString(value);
