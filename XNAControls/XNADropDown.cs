@@ -154,8 +154,21 @@ public class XNADropDown : XNAControl
     public Texture2D DropDownTexture { get; set; }
     public Texture2D DropDownOpenTexture { get; set; }
 
-    public Texture2D BackgroundTexture { get; set; }
-    public Texture2D ItemBackgroundTexture {  get; set; }
+    private Texture2D backgroundTexture;
+
+    public Texture2D BackgroundTexture
+    {
+        get => backgroundTexture ??= AssetLoader.CreateTexture(UISettings.ActiveSettings.BackgroundColor, Width, Height);
+        set => backgroundTexture = value;
+    }
+
+    private Texture2D itemBackgroundTexture;
+
+    public Texture2D ItemBackgroundTexture
+    {
+        get => itemBackgroundTexture ??= BackgroundTexture;
+        set => itemBackgroundTexture = value;
+    }
 
     public EnhancedSoundEffect ClickSoundEffect { get; set; }
 
