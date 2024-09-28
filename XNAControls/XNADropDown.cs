@@ -264,6 +264,7 @@ public class XNADropDown : XNAControl
             case "BackColor":
                 Color backcolor = AssetLoader.GetRGBAColorFromString(value);
                 BackgroundTexture = AssetLoader.CreateTexture(backcolor, Width, Height);
+                ItemBackgroundTexture ??= BackgroundTexture;
                 return;
             case "ItemBackColor":
                 Color itembackcolor = AssetLoader.GetRGBAColorFromString(value);
