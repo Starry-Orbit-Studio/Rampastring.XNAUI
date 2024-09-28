@@ -158,7 +158,7 @@ public class XNADropDown : XNAControl
 
     public Texture2D BackgroundTexture
     {
-        get => backgroundTexture ??= AssetLoader.CreateTexture(UISettings.ActiveSettings.BackgroundColor, Width, Height);
+        get => backgroundTexture ??= AssetLoader.CreateTexture(UISettings.ActiveSettings.BackgroundColor, 1, 1);
         set => backgroundTexture = value;
     }
 
@@ -276,12 +276,12 @@ public class XNADropDown : XNAControl
                 return;
             case "BackColor":
                 Color backcolor = AssetLoader.GetRGBAColorFromString(value);
-                BackgroundTexture = AssetLoader.CreateTexture(backcolor, Width, Height);
+                BackgroundTexture = AssetLoader.CreateTexture(backcolor, 1, 1);
                 ItemBackgroundTexture ??= BackgroundTexture;
                 return;
             case "ItemBackColor":
                 Color itembackcolor = AssetLoader.GetRGBAColorFromString(value);
-                ItemBackgroundTexture = AssetLoader.CreateTexture(itembackcolor, Width, Height);
+                ItemBackgroundTexture = AssetLoader.CreateTexture(itembackcolor, 1, 1);
                 return;
             case "DisabledItemColor":
                 DisabledItemColor = AssetLoader.GetColorFromString(value);
